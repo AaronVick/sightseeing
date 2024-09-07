@@ -49,7 +49,6 @@ export default function Home() {
   const handleShare = () => {
     console.log(`Sharing city: ${city}`);
     alert(`City shared: ${city}`);
-    // Share logic here
   };
 
   return (
@@ -65,6 +64,11 @@ export default function Home() {
         <meta property="fc:frame:button:2" content="Share" />
         <meta property="fc:frame:button:2:action" content="link" />
         <meta property="fc:frame:button:2:target" content="https://warpcast.com/~/compose?text=Exploring+city+via+Farcaster!" />
+
+        {/* Adding the text input field into Farcaster meta properties */}
+        <meta property="fc:frame:input:text" content="Enter a city" />
+        <meta property="fc:frame:input:text:value" content={city} />
+        <meta property="fc:frame:post_url" content={`${baseUrl}/api/matchCity`} />
       </Head>
 
       <main style={{ textAlign: 'center', marginTop: '50px' }}>

@@ -9,7 +9,28 @@ export default async function handler(req) {
   const text = searchParams.get('text');
 
   if (!text) {
-    return new Response('Missing text parameter', { status: 400 });
+    return new Response(
+      new ImageResponse(
+        (
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              height: '100%',
+              width: '100%',
+              backgroundColor: '#FF6347', // Use a red background for error
+            }}
+          >
+            <h1>Please Enter a City</h1>
+          </div>
+        ),
+        {
+          width: 1200,
+          height: 630,
+        }
+      )
+    );
   }
 
   const imageResponse = new ImageResponse(
