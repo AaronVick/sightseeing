@@ -18,7 +18,7 @@ export default async function handler(req) {
           backgroundColor: '#87CEEB',
         }}
       >
-        <h1>Explore Your Next Destination!</h1>
+        <h1>Please Enter a City</h1>
       </div>
     ),
     {

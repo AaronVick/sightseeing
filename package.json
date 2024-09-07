@@ -1,17 +1,17 @@
 {
-    "name": "sightseeing",
-    "version": "1.0.0",
-    "description": "City Explorer for Farcaster",
-    "main": "index.js",
-    "scripts": {
-      "test": "echo \"Error: no test specified\" && exit 1"
-    },
-    "dependencies": {
-      "@vercel/og": "^0.6.2",
-      "axios": "^1.7.4",
-      "next": "^14.2.5",
-      "react": "^18.3.1",
-      "react-dom": "^18.3.1"
-    }
+  "name": "sightseeing",
+  "version": "1.0.0",
+  "description": "City Explorer for Farcaster",
+  "main": "index.js",
+  "dependencies": {
+    "axios": "^1.7.4",
+    "next": "^14.2.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
   }
-  
+}
