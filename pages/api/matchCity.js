@@ -1,72 +1,63 @@
-import axios from 'axios';
+import matchCity from './matchCity';
 
 export default async function handler(req, res) {
-  // Check if the request is a POST request
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://sightseeing-seven.vercel.app';
+  const { city } = req.body;
+
+  if (!city) {
+    console.log('City input is missing.');
+    return res.setHeader('Content-Type', 'text/html').status(400).send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta property="fc:frame" content="vNext" />
+          <meta property="fc:frame:image" content="${baseUrl}/api/generateImage?text=City Input Missing" />
+          <meta property="fc:frame:button:1" content="Go Back" />
+          <meta property="fc:frame:post_url:1" content="${baseUrl}/api/matchCity" />
+        </head>
+        <body>
+          <h1>City input is required.</h1>
+        </body>
+      </html>
+    `);
   }
 
-  // Log the incoming request to check if the data is correctly passed
-  console.log('Request body:', req.body);
+  const matchedCities = await matchCity(city);
 
-  // Extract the city from untrustedData.inputText
-  const { untrustedData } = req.body;
-  const city = untrustedData?.inputText;
-
-  if (!city || city.trim() === '') {
-    console.log('City input is missing in the request.');
-
-    // Return the Vercel OG image with the message "Please Enter a City"
-    return res.status(200).json({
-      title: 'Error',
-      description: 'Please Enter a City',
-      image: `${process.env.NEXT_PUBLIC_BASE_URL}/api/generateImage?text=Please Enter a City`,
-      buttons: [
-        {
-          text: 'Go Back',
-          method: 'POST',
-          action: 'reload',
-        },
-      ],
-    });
+  if (!matchedCities || matchedCities.length === 0) {
+    console.log('No matching cities found.');
+    return res.setHeader('Content-Type', 'text/html').status(200).send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta property="fc:frame" content="vNext" />
+          <meta property="fc:frame:image" content="${baseUrl}/api/generateImage?text=No Matching Cities" />
+          <meta property="fc:frame:button:1" content="Go Back" />
+          <meta property="fc:frame:post_url:1" content="${baseUrl}/api/matchCity" />
+        </head>
+        <body>
+          <h1>No matching cities found. Please try again.</h1>
+        </body>
+      </html>
+    `);
   }
 
-  try {
-    // Make the request to the OpenTripMap API to find matching cities
-    const response = await axios.get(
-      `https://api.opentripmap.com/0.1/en/places/geoname?name=${city}&apikey=${process.env.OPENTRIPMAP_API_KEY}`
-    );
+  const cityButtons = matchedCities.map((cityName, index) => `
+    <meta property="fc:frame:button:${index + 1}" content="City ${index + 1}: ${cityName}" />
+    <meta property="fc:frame:post_url:${index + 1}" content="${baseUrl}/api/seeAttractions?city=${cityName}" />
+  `).join('');
 
-    const cities = response.data.features.map((feature) => feature.properties.name).slice(0, 4);
-
-    // Log the matched cities
-    console.log('Matched cities:', cities);
-
-    // Format Farcaster frame meta tags properly for matched cities
-    res.status(200).json({
-      title: `Matching Cities for ${city}`,
-      description: 'Select a city to explore its attractions',
-      image: `${process.env.NEXT_PUBLIC_BASE_URL}/api/generateImage?text=cities`,
-      buttons: cities.map((cityName, index) => ({
-        text: `City ${index + 1}: ${cityName}`,
-        method: 'POST',
-        action: 'navigate',
-        url: `${process.env.NEXT_PUBLIC_BASE_URL}/api/seeAttractions?city=${cityName}`,
-      })),
-    });
-  } catch (error) {
-    console.error('Error fetching cities:', error.response ? error.response.data : error.message);
-    res.status(500).json({
-      title: 'Error',
-      description: 'Failed to match cities. Please try again.',
-      image: `${process.env.NEXT_PUBLIC_BASE_URL}/api/generateImage?text=Error Fetching Cities`,
-      buttons: [
-        {
-          text: 'Retry',
-          method: 'POST',
-          action: 'reload',
-        },
-      ],
-    });
-  }
+  return res.setHeader('Content-Type', 'text/html').status(200).send(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta property="fc:frame" content="vNext" />
+        <meta property="fc:frame:image" content="${baseUrl}/api/generateImage?text=cities" />
+        ${cityButtons}
+      </head>
+      <body>
+        <h1>Matching Cities for ${city}</h1>
+      </body>
+    </html>
+  `);
 }
