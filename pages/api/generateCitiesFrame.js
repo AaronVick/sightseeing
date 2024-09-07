@@ -1,8 +1,8 @@
 import matchCity from './matchCity';
-import generateImage from './generateImage';
 
 export default async function handler(req, res) {
   const { city } = req.body;
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://sightseeing-seven.vercel.app';
 
   if (!city) {
     return res.status(400).json({ error: 'City input is required' });
@@ -21,9 +21,9 @@ export default async function handler(req, res) {
         text: `City ${index + 1}`,
         method: 'POST',
         action: 'navigate',
-        url: `/api/seeAttractions?city=${cityName}`,
+        url: `${baseUrl}/api/seeAttractions?city=${cityName}`,
       })),
-      image: '/api/generateImage?text=cities',
+      image: `${baseUrl}/api/generateImage?text=cities`,
       title: `Matching Cities for ${city}`,
       description: 'Select a city to explore its attractions',
     },

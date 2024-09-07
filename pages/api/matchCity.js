@@ -2,6 +2,7 @@ import axios from 'axios';
 
 export default async function handler(req, res) {
   const { city } = req.body;
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://sightseeing-seven.vercel.app';
 
   if (!city) {
     return res.status(400).json({ error: 'City input is required' });

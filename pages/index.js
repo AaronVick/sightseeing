@@ -2,6 +2,7 @@ import Head from 'next/head';
 import { useState } from 'react';
 
 export default function Home() {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://sightseeing-seven.vercel.app';
   const [city, setCity] = useState('');
 
   const handleLookup = async () => {
@@ -9,7 +10,7 @@ export default function Home() {
       alert('Please enter a city!');
       return;
     }
-    const res = await fetch('/api/generateCitiesFrame', {
+    const res = await fetch(`${baseUrl}/api/generateCitiesFrame`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -20,14 +21,13 @@ export default function Home() {
     if (result.error) {
       alert(result.error);
     } else {
-      // Handle showing the matched cities
       console.log(result);
     }
   };
 
   const handleShare = () => {
     alert(`City shared: ${city}`);
-    // Additional share logic can be added here
+    // Share logic
   };
 
   return (
@@ -35,10 +35,10 @@ export default function Home() {
       <Head>
         <title>Travel App - Explore Cities</title>
         <meta property="fc:frame" content="vNext" />
-        <meta property="fc:frame:image" content="/travel.png" />
+        <meta property="fc:frame:image" content={`${baseUrl}/travel.png`} />
         <meta property="fc:frame:button:1" content="Lookup City" />
         <meta property="fc:frame:button:1:action" content="post" />
-        <meta property="fc:frame:post_url:1" content="/api/matchCity" />
+        <meta property="fc:frame:post_url:1" content={`${baseUrl}/api/matchCity`} />
 
         <meta property="fc:frame:button:2" content="Share" />
         <meta property="fc:frame:button:2:action" content="link" />
@@ -46,7 +46,7 @@ export default function Home() {
       </Head>
 
       <main style={{ textAlign: 'center', marginTop: '50px' }}>
-        <img src="/api/generateImage?text=default" alt="default static" style={{ width: '300px' }} />
+        <img src={`${baseUrl}/api/generateImage?text=default`} alt="default static" style={{ width: '300px' }} />
         <div>
           <input
             type="text"

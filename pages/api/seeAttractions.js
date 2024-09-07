@@ -2,6 +2,7 @@ import axios from 'axios';
 
 export default async function handler(req, res) {
   const { city, page = 1 } = req.body;
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://sightseeing-seven.vercel.app';
 
   if (!city) {
     return res.status(400).json({ error: 'City name is required' });
@@ -21,14 +22,14 @@ export default async function handler(req, res) {
       id: feature.id,
       name: feature.properties.name || 'Unknown Name',
       description: feature.properties.description || 'No description available',
-      image: feature.properties.image || '/default-image.png',
+      image: feature.properties.image || `${baseUrl}/default-image.png`,
     }));
 
     res.status(200).json({
       fc_frame: {
         title: `Attractions in ${city}`,
         description: `Explore these attractions in ${city}`,
-        image: '/travel.png',
+        image: `${baseUrl}/travel.png`,
         items: attractions.map((attraction) => ({
           title: attraction.name,
           description: attraction.description,
@@ -39,14 +40,14 @@ export default async function handler(req, res) {
             text: 'Previous',
             method: 'POST',
             action: 'navigate',
-            url: `/api/seeAttractions?city=${city}&page=${page - 1}`,
+            url: `${baseUrl}/api/seeAttractions?city=${city}&page=${page - 1}`,
             disabled: page === 1,
           },
           {
             text: 'Next',
             method: 'POST',
             action: 'navigate',
-            url: `/api/seeAttractions?city=${city}&page=${page + 1}`,
+            url: `${baseUrl}/api/seeAttractions?city=${city}&page=${page + 1}`,
           },
           {
             text: 'Share',
@@ -62,7 +63,7 @@ export default async function handler(req, res) {
       fc_frame: {
         title: 'Error',
         description: 'Failed to load attractions. Please try again.',
-        image: '/error.png',
+        image: `${baseUrl}/error.png`,
         buttons: [
           {
             text: 'Try Again',
