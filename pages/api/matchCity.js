@@ -6,10 +6,12 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  // Log the incoming request to check if the city is correctly passed
+  // Log the incoming request to check if the data is correctly passed
   console.log('Request body:', req.body);
 
-  const { city } = req.body; // Try to extract city from request body
+  // Extract the city from untrustedData.inputText
+  const { untrustedData } = req.body;
+  const city = untrustedData?.inputText;
 
   if (!city) {
     console.log('City input is missing in the request.');
@@ -17,7 +19,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Make the request to the OpenTripMap API
+    // Make the request to the OpenTripMap API to find matching cities
     const response = await axios.get(
       `https://api.opentripmap.com/0.1/en/places/geoname?name=${city}&apikey=${process.env.OPENTRIPMAP_API_KEY}`
     );
