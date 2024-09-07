@@ -8,14 +8,26 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Use an API to fetch matching cities
     const response = await axios.get(
       `https://api.opentripmap.com/0.1/en/places/geoname?name=${city}&apikey=${process.env.OPENTRIPMAP_API_KEY}`
     );
 
-    // Return a list of city matches (limit to top 4)
     const cities = response.data.features.map((feature) => feature.properties.name).slice(0, 4);
-    res.status(200).json(cities);
+
+    res.status(200).json({
+      fc_frame: {
+        cities,
+        buttons: cities.map((cityName, index) => ({
+          text: `City ${index + 1}`,
+          method: 'POST',
+          action: 'navigate',
+          url: `/api/seeAttractions?city=${cityName}`,
+        })),
+        image: '/city-matching.png', 
+        title: `Matching Cities for ${city}`,
+        description: 'Select a city to explore its attractions',
+      }
+    });
   } catch (error) {
     console.error('Error matching cities:', error);
     res.status(500).json({ error: 'Failed to match cities' });

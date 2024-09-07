@@ -1,104 +1,54 @@
 import Head from 'next/head';
 import { useState } from 'react';
-import axios from 'axios';
+import generateCitiesFrame from './generateCitiesFrame';
+import generateImage from './generateImage';
 
 export default function Home() {
-  const [cityInput, setCityInput] = useState('');
-  const [matchingCities, setMatchingCities] = useState([]);
-  const [selectedCity, setSelectedCity] = useState('');
-  const [attractions, setAttractions] = useState([]);
-  const [page, setPage] = useState(1); // Page state for pagination
-  const [loading, setLoading] = useState(false);
+  const [city, setCity] = useState('');
 
-  const handleCityInputChange = (e) => {
-    setCityInput(e.target.value);
-  };
-
-  const handleExploreCityClick = async () => {
-    if (!cityInput) {
-      // Generate an OG image if no city is entered
-      await axios.get('/api/generateImage');
-    } else {
-      // Fetch matching cities based on the input
-      const response = await axios.post('/api/matchCity', { city: cityInput });
-      setMatchingCities(response.data); // Set matching cities
+  const handleLookup = () => {
+    if (!city) {
+      alert('Please enter a city!');
+      return;
     }
+    generateCitiesFrame(city);
   };
 
-  const handleCitySelect = async (city) => {
-    setSelectedCity(city);
-    fetchAttractions(city, 1); // Fetch the first page of attractions
-  };
-
-  const fetchAttractions = async (city, page) => {
-    setLoading(true);
-    try {
-      const response = await axios.post('/api/seeAttractions', { city, page });
-      setAttractions(response.data); // Set attractions data
-      setPage(page); // Update the current page
-    } catch (error) {
-      console.error('Error fetching attractions:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleNext = () => {
-    fetchAttractions(selectedCity, page + 1); // Fetch next page
-  };
-
-  const handlePrevious = () => {
-    if (page > 1) {
-      fetchAttractions(selectedCity, page - 1); // Fetch previous page
-    }
+  const handleShare = () => {
+    alert(`City shared: ${city}`);
+    // Additional share logic can be added here
   };
 
   return (
     <>
       <Head>
-        <title>City Explorer</title>
+        <title>Travel App - Explore Cities</title>
         <meta property="fc:frame" content="vNext" />
-        <meta property="fc:frame:image" content="travel.png" /> 
+        <meta property="fc:frame:image" content="/travel.png" />
+        <meta property="fc:frame:button:1" content="Lookup City" />
+        <meta property="fc:frame:button:1:action" content="post" />
+        <meta property="fc:frame:post_url:1" content="/api/matchCity" />
+
+        <meta property="fc:frame:button:2" content="Share" />
+        <meta property="fc:frame:button:2:action" content="link" />
+        <meta property="fc:frame:button:2:target" content="https://warpcast.com/~/compose?text=Exploring+city+via+Farcaster!" />
       </Head>
 
-      <main>
-        <h1>Explore Cities</h1>
-        <input 
-          type="text" 
-          value={cityInput} 
-          onChange={handleCityInputChange} 
-          placeholder="Enter city name" 
-        />
-        <button onClick={handleExploreCityClick}>Explore City</button>
-
-        {matchingCities.length > 0 && (
-          <div>
-            {matchingCities.slice(0, 4).map((city) => (
-              <button key={city} onClick={() => handleCitySelect(city)}>
-                {city}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {selectedCity && (
-          <>
-            <h2>Attractions in {selectedCity}</h2>
-            {loading ? <p>Loading...</p> : (
-              <ul>
-                {attractions.map((attraction) => (
-                  <li key={attraction.id}>
-                    <h3>{attraction.name}</h3>
-                    <p>{attraction.description}</p>
-                    <img src={attraction.image || '/travel.png'} alt={attraction.name} />
-                  </li>
-                ))}
-              </ul>
-            )}
-            <button onClick={handlePrevious} disabled={page <= 1}>Previous</button>
-            <button onClick={handleNext}>Next</button>
-          </>
-        )}
+      <main style={{ textAlign: 'center', marginTop: '50px' }}>
+        <img src={generateImage('default')} alt="default static" style={{ width: '300px' }} />
+        <div>
+          <input
+            type="text"
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            placeholder="Enter a city"
+            style={{ padding: '10px', margin: '20px', fontSize: '16px' }}
+          />
+        </div>
+        <div>
+          <button onClick={handleLookup} style={{ padding: '10px 20px', marginRight: '10px' }}>Lookup City</button>
+          <button onClick={handleShare} style={{ padding: '10px 20px' }}>Share</button>
+        </div>
       </main>
     </>
   );
