@@ -8,6 +8,9 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method Not Allowed. POST required.' });
   }
 
+  // Log the request body to verify its structure
+  console.log('Request Body:', req.body);
+
   // Extract city_text from the request body
   const { city_text } = req.body;
 
@@ -32,12 +35,19 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Log the city_text before making the API call
+    console.log('City text to search:', city_text);
+
     // Make the request to the OpenTripMap API to find matching cities using the POSTed city_text
     const response = await axios.get(
       `https://api.opentripmap.com/0.1/en/places/geoname?name=${city_text}&apikey=${process.env.OPENTRIPMAP_API_KEY}`
     );
 
     const cities = response.data.features.map((feature) => feature.properties.name).slice(0, 4);
+
+    // Log the OpenTripMap response and matched cities
+    console.log('OpenTripMap response:', response.data);
+    console.log('Matched Cities:', cities);
 
     const cityButtons = cities.map((cityName, index) => `
       <meta property="fc:frame:button:${index + 1}" content="City ${index + 1}: ${cityName}" />
