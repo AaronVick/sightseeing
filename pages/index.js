@@ -1,17 +1,28 @@
 import Head from 'next/head';
 import { useState } from 'react';
-import generateCitiesFrame from './generateCitiesFrame';
-import generateImage from './generateImage';
 
 export default function Home() {
   const [city, setCity] = useState('');
 
-  const handleLookup = () => {
+  const handleLookup = async () => {
     if (!city) {
       alert('Please enter a city!');
       return;
     }
-    generateCitiesFrame(city);
+    const res = await fetch('/api/generateCitiesFrame', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ city }),
+    });
+    const result = await res.json();
+    if (result.error) {
+      alert(result.error);
+    } else {
+      // Handle showing the matched cities
+      console.log(result);
+    }
   };
 
   const handleShare = () => {
@@ -35,7 +46,7 @@ export default function Home() {
       </Head>
 
       <main style={{ textAlign: 'center', marginTop: '50px' }}>
-        <img src={generateImage('default')} alt="default static" style={{ width: '300px' }} />
+        <img src="/api/generateImage?text=default" alt="default static" style={{ width: '300px' }} />
         <div>
           <input
             type="text"

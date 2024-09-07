@@ -14,20 +14,7 @@ export default async function handler(req, res) {
 
     const cities = response.data.features.map((feature) => feature.properties.name).slice(0, 4);
 
-    res.status(200).json({
-      fc_frame: {
-        cities,
-        buttons: cities.map((cityName, index) => ({
-          text: `City ${index + 1}`,
-          method: 'POST',
-          action: 'navigate',
-          url: `/api/seeAttractions?city=${cityName}`,
-        })),
-        image: '/city-matching.png', 
-        title: `Matching Cities for ${city}`,
-        description: 'Select a city to explore its attractions',
-      }
-    });
+    res.status(200).json(cities);
   } catch (error) {
     console.error('Error matching cities:', error);
     res.status(500).json({ error: 'Failed to match cities' });
