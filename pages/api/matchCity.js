@@ -43,10 +43,34 @@ export default async function handler(req, res) {
     // Log the matched cities
     console.log('Matched cities:', cities);
 
-    // Send the response back with the matched cities
-    res.status(200).json(cities);
+    // Format Farcaster frame meta tags properly for matched cities
+    res.status(200).json({
+      fc_frame: {
+        title: `Matching Cities for ${city}`,
+        description: 'Select a city to explore its attractions',
+        image: `${process.env.NEXT_PUBLIC_BASE_URL}/api/generateImage?text=cities`,
+        buttons: cities.map((cityName, index) => ({
+          text: `City ${index + 1}: ${cityName}`,
+          method: 'POST',
+          action: 'navigate',
+          url: `${process.env.NEXT_PUBLIC_BASE_URL}/api/seeAttractions?city=${cityName}`,
+        })),
+      },
+    });
   } catch (error) {
     console.error('Error fetching cities:', error.response ? error.response.data : error.message);
-    res.status(500).json({ error: 'Failed to match cities' });
+    res.status(500).json({
+      fc_frame: {
+        title: 'Error',
+        description: 'Failed to match cities. Please try again.',
+        image: `${process.env.NEXT_PUBLIC_BASE_URL}/api/generateImage?text=Error Fetching Cities`,
+        buttons: [
+          {
+            text: 'Retry',
+            action: 'reload',
+          },
+        ],
+      },
+    });
   }
 }
