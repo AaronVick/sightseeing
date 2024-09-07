@@ -4,30 +4,53 @@ import { useState } from 'react';
 export default function Home() {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://sightseeing-seven.vercel.app';
   const [city, setCity] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleLookup = async () => {
     if (!city) {
+      console.log('No city entered.');
       alert('Please enter a city!');
       return;
     }
-    const res = await fetch(`${baseUrl}/api/generateCitiesFrame`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ city }),
-    });
-    const result = await res.json();
-    if (result.error) {
-      alert(result.error);
-    } else {
-      console.log(result);
+    
+    setLoading(true);
+    console.log(`Looking up city: ${city}`);
+
+    try {
+      const res = await fetch(`${baseUrl}/api/generateCitiesFrame`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ city }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Error fetching data: ${res.statusText}`);
+      }
+
+      const result = await res.json();
+      console.log('City lookup result:', result);
+
+      if (result.error) {
+        console.log('Error during city lookup:', result.error);
+        alert(result.error);
+      } else {
+        // Handle showing the matched cities (you can update the UI here)
+        console.log('Matched cities:', result);
+      }
+    } catch (error) {
+      console.error('Error during fetch:', error);
+      alert('An error occurred. Check the console for details.');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleShare = () => {
+    console.log(`Sharing city: ${city}`);
     alert(`City shared: ${city}`);
-    // Share logic
+    // Share logic here
   };
 
   return (
@@ -57,8 +80,12 @@ export default function Home() {
           />
         </div>
         <div>
-          <button onClick={handleLookup} style={{ padding: '10px 20px', marginRight: '10px' }}>Lookup City</button>
-          <button onClick={handleShare} style={{ padding: '10px 20px' }}>Share</button>
+          <button onClick={handleLookup} style={{ padding: '10px 20px', marginRight: '10px' }} disabled={loading}>
+            {loading ? 'Looking up...' : 'Lookup City'}
+          </button>
+          <button onClick={handleShare} style={{ padding: '10px 20px' }}>
+            Share
+          </button>
         </div>
       </main>
     </>
