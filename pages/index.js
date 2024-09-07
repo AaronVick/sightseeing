@@ -17,13 +17,13 @@ export default function Home() {
     console.log(`Looking up city: ${city}`);
 
     try {
-      // Sending the POST request to the server with the city
+      // Sending the POST request to the server with the city and passing it as 'city_text'
       const res = await fetch(`${baseUrl}/api/matchCity`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ city }), // Pass the city value in the body
+        body: JSON.stringify({ city_text: city }),  // Passing the city value as city_text
       });
 
       // Log the response status
