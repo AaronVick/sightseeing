@@ -36,7 +36,6 @@ export default function Home() {
         console.log('Error during city lookup:', result.error);
         alert(result.error);
       } else {
-        // Handle showing the matched cities (you can update the UI here)
         console.log('Matched cities:', result);
       }
     } catch (error) {
@@ -71,7 +70,9 @@ export default function Home() {
       <main style={{ textAlign: 'center', marginTop: '50px' }}>
         <img src={`${baseUrl}/api/generateImage?text=default`} alt="default static" style={{ width: '300px' }} />
         <div>
+          <label htmlFor="city-input">Enter a City:</label>
           <input
+            id="city-input"
             type="text"
             value={city}
             onChange={(e) => setCity(e.target.value)}
