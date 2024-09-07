@@ -12,18 +12,22 @@ export default function Home() {
       alert('Please enter a city!');
       return;
     }
-    
+
     setLoading(true);
     console.log(`Looking up city: ${city}`);
 
     try {
-      const res = await fetch(`${baseUrl}/api/generateCitiesFrame`, {
+      // Sending the POST request to the server with the city
+      const res = await fetch(`${baseUrl}/api/matchCity`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ city }),
+        body: JSON.stringify({ city }), // Pass the city value in the body
       });
+
+      // Log the response status
+      console.log('Response status:', res.status);
 
       if (!res.ok) {
         throw new Error(`Error fetching data: ${res.statusText}`);
@@ -49,6 +53,7 @@ export default function Home() {
   const handleShare = () => {
     console.log(`Sharing city: ${city}`);
     alert(`City shared: ${city}`);
+    // Share logic here
   };
 
   return (

@@ -22,14 +22,14 @@ export default async function handler(req, res) {
       id: feature.id,
       name: feature.properties.name || 'Unknown Name',
       description: feature.properties.description || 'No description available',
-      image: feature.properties.image || `${baseUrl}/default-image.png`,
+      image: feature.properties.image || `${baseUrl}/default-image.png`, // Placeholder image
     }));
 
     res.status(200).json({
       fc_frame: {
         title: `Attractions in ${city}`,
         description: `Explore these attractions in ${city}`,
-        image: `${baseUrl}/travel.png`,
+        image: `${baseUrl}/travel.png`,  // Image for the attractions page
         items: attractions.map((attraction) => ({
           title: attraction.name,
           description: attraction.description,
@@ -41,7 +41,7 @@ export default async function handler(req, res) {
             method: 'POST',
             action: 'navigate',
             url: `${baseUrl}/api/seeAttractions?city=${city}&page=${page - 1}`,
-            disabled: page === 1,
+            disabled: page === 1,  // Disable "Previous" on first page
           },
           {
             text: 'Next',
@@ -63,7 +63,7 @@ export default async function handler(req, res) {
       fc_frame: {
         title: 'Error',
         description: 'Failed to load attractions. Please try again.',
-        image: `${baseUrl}/error.png`,
+        image: `${baseUrl}/error.png`,  // Error image
         buttons: [
           {
             text: 'Try Again',
