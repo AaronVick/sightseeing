@@ -17,13 +17,13 @@ export default function Home() {
     console.log(`Looking up city: ${city}`);
 
     try {
-      // Sending the POST request to the server with the city and passing it as 'city_text'
+      // Sending the POST request to the server with the city_text variable
       const res = await fetch(`${baseUrl}/api/matchCity`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ city_text: city }),  // Passing the city value as city_text
+        body: JSON.stringify({ city_text: city }),  // Send city value as city_text
       });
 
       // Log the response status
@@ -33,27 +33,15 @@ export default function Home() {
         throw new Error(`Error fetching data: ${res.statusText}`);
       }
 
-      const result = await res.json();
-      console.log('City lookup result:', result);
+      const result = await res.text();  // Using `.text()` for HTML response
+      document.body.innerHTML = result;  // Replace the body content with the returned HTML
 
-      if (result.error) {
-        console.log('Error during city lookup:', result.error);
-        alert(result.error);
-      } else {
-        console.log('Matched cities:', result);
-      }
     } catch (error) {
       console.error('Error during fetch:', error);
       alert('An error occurred. Check the console for details.');
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleShare = () => {
-    console.log(`Sharing city: ${city}`);
-    alert(`City shared: ${city}`);
-    // Share logic here
   };
 
   return (
@@ -66,18 +54,13 @@ export default function Home() {
         <meta property="fc:frame:button:1:action" content="post" />
         <meta property="fc:frame:post_url:1" content={`${baseUrl}/api/matchCity`} />
 
-        <meta property="fc:frame:button:2" content="Share" />
-        <meta property="fc:frame:button:2:action" content="link" />
-        <meta property="fc:frame:button:2:target" content="https://warpcast.com/~/compose?text=Exploring+city+via+Farcaster!" />
-
-        {/* Adding the text input field into Farcaster meta properties */}
+        {/* Input for city */}
         <meta property="fc:frame:input:text" content="Enter a city" />
         <meta property="fc:frame:input:text:value" content={city} />
         <meta property="fc:frame:post_url" content={`${baseUrl}/api/matchCity`} />
       </Head>
 
       <main style={{ textAlign: 'center', marginTop: '50px' }}>
-        <img src={`${baseUrl}/api/generateImage?text=default`} alt="default static" style={{ width: '300px' }} />
         <div>
           <label htmlFor="city-input">Enter a City:</label>
           <input
@@ -92,9 +75,6 @@ export default function Home() {
         <div>
           <button onClick={handleLookup} style={{ padding: '10px 20px', marginRight: '10px' }} disabled={loading}>
             {loading ? 'Looking up...' : 'Lookup City'}
-          </button>
-          <button onClick={handleShare} style={{ padding: '10px 20px' }}>
-            Share
           </button>
         </div>
       </main>

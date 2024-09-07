@@ -3,19 +3,18 @@ import axios from 'axios';
 export default async function handler(req, res) {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://sightseeing-seven.vercel.app';
 
-  // Check if the request is a POST request
+  // Handle only POST requests
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
+    return res.status(405).json({ error: 'Method Not Allowed. POST required.' });
   }
 
   // Extract city_text from the request body
   const { city_text } = req.body;
-  const city = city_text;
 
-  if (!city || city.trim() === '') {
-    console.log('City input is missing in the request.');
+  if (!city_text || city_text.trim() === '') {
+    console.log('City input is missing.');
 
-    // Return HTML response with Farcaster meta tags for missing city input
+    // Return an HTML response with Farcaster meta tags for missing city input
     return res.setHeader('Content-Type', 'text/html').status(400).send(`
       <!DOCTYPE html>
       <html>
@@ -33,9 +32,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Request matching cities from OpenTripMap API
+    // Make the request to the OpenTripMap API to find matching cities using the POSTed city_text
     const response = await axios.get(
-      `https://api.opentripmap.com/0.1/en/places/geoname?name=${city}&apikey=${process.env.OPENTRIPMAP_API_KEY}`
+      `https://api.opentripmap.com/0.1/en/places/geoname?name=${city_text}&apikey=${process.env.OPENTRIPMAP_API_KEY}`
     );
 
     const cities = response.data.features.map((feature) => feature.properties.name).slice(0, 4);
@@ -45,7 +44,7 @@ export default async function handler(req, res) {
       <meta property="fc:frame:post_url:${index + 1}" content="${baseUrl}/api/seeAttractions?city=${cityName}" />
     `).join('');
 
-    // Send HTML response with matched cities
+    // Return HTML response with city matching results and buttons
     return res.setHeader('Content-Type', 'text/html').status(200).send(`
       <!DOCTYPE html>
       <html>
@@ -55,14 +54,14 @@ export default async function handler(req, res) {
           ${cityButtons}
         </head>
         <body>
-          <h1>Matching Cities for ${city}</h1>
+          <h1>Matching Cities for ${city_text}</h1>
         </body>
       </html>
     `);
   } catch (error) {
     console.error('Error fetching cities:', error.response ? error.response.data : error.message);
 
-    // Return error response
+    // Return an HTML response with an error message
     return res.setHeader('Content-Type', 'text/html').status(500).send(`
       <!DOCTYPE html>
       <html>
