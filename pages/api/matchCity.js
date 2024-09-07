@@ -13,9 +13,23 @@ export default async function handler(req, res) {
   const { untrustedData } = req.body;
   const city = untrustedData?.inputText;
 
-  if (!city) {
+  if (!city || city.trim() === '') {
     console.log('City input is missing in the request.');
-    return res.status(400).json({ error: 'City input is required' });
+
+    // Return the Vercel OG image with the message "Please Enter a City"
+    return res.status(200).json({
+      fc_frame: {
+        title: 'Error',
+        description: 'Please Enter a City',
+        image: `${process.env.NEXT_PUBLIC_BASE_URL}/api/generateImage?text=Please Enter a City`,
+        buttons: [
+          {
+            text: 'Go Back',
+            action: 'reload',
+          },
+        ],
+      },
+    });
   }
 
   try {
