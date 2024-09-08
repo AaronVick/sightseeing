@@ -40,15 +40,29 @@ export default async function handler(req, res) {
 
     const mainCity = geonameResponse.data.name;
     const country = geonameResponse.data.country;
+    const lat = geonameResponse.data.lat;
+    const lon = geonameResponse.data.lon;
 
-    let cities = [`${mainCity}, ${country}`];
+    let cities = [{
+      name: `${mainCity}, ${country}`,
+      lat: lat,
+      lon: lon
+    }];
+
     if (geonameResponse.data.partial_match) {
-      cities.unshift(city_text);
+      cities.unshift({
+        name: city_text,
+        lat: lat,
+        lon: lon
+      });
     }
 
     console.log('matchCity.js - Final Cities List:', cities);
 
-    const cityList = cities.map((city, index) => `${index + 1}: ${city}`).join('\n');
+    // Store the cities list in an environment variable
+    process.env.CITY_LIST = JSON.stringify(cities);
+
+    const cityList = cities.map((city, index) => `${index + 1}: ${city.name}`).join('\n');
     const cityButtons = cities.map((city, index) => `
       <meta property="fc:frame:button:${index + 1}" content="${index + 1}" />
     `).join('');

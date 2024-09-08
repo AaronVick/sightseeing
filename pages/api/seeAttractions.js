@@ -14,19 +14,22 @@ export default async function handler(req, res) {
   console.log('seeAttractions.js - Request query:', JSON.stringify(req.query));
   console.log('seeAttractions.js - Request body:', JSON.stringify(req.body));
 
-  let city, page;
+  let cityIndex, page;
 
   if (req.method === 'GET' || req.method === 'POST') {
     const data = req.method === 'GET' ? req.query : req.body;
-    city = data.city || data.untrustedData?.inputText || data.city_text || '';
+    cityIndex = parseInt(data.untrustedData?.buttonIndex || data.cityIndex || '1') - 1;
     page = parseInt(data.page) || 1;
 
     if (data.untrustedData) {
-      const buttonIndex = data.untrustedData.buttonIndex;
+      const buttonIndex = parseInt(data.untrustedData.buttonIndex);
       if (buttonIndex === 1 && page > 1) {
         page--;
       } else if (buttonIndex === 2) {
         page++;
+      } else if (buttonIndex >= 1 && buttonIndex <= 4) {
+        cityIndex = buttonIndex - 1;
+        page = 1;
       }
     }
   } else {
@@ -34,25 +37,23 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  console.log('seeAttractions.js - Processed request:', { city, page });
+  console.log('seeAttractions.js - Processed request:', { cityIndex, page });
 
-  if (!city) {
-    console.log('seeAttractions.js - City name is missing');
-    return sendErrorResponse(res, baseUrl, 'City name is required');
+  // Retrieve the city list from the environment variable
+  const cityList = JSON.parse(process.env.CITY_LIST || '[]');
+  console.log('seeAttractions.js - Retrieved city list:', cityList);
+
+  if (!cityList[cityIndex]) {
+    console.log('seeAttractions.js - City not found in the list');
+    return sendErrorResponse(res, baseUrl, 'City not found');
   }
 
+  const city = cityList[cityIndex];
+
   try {
-    console.log('seeAttractions.js - Fetching geo data for:', city);
-    const geoResponse = await axios.get(
-      `https://api.opentripmap.com/0.1/en/places/geoname?name=${encodeURIComponent(city)}&apikey=${process.env.OPENTRIPMAP_API_KEY}`
-    );
-    console.log('seeAttractions.js - Geo API response:', JSON.stringify(geoResponse.data, null, 2));
-
-    const { lat, lon } = geoResponse.data;
-
-    console.log('seeAttractions.js - Fetching attractions for:', { lat, lon, page });
+    console.log('seeAttractions.js - Fetching attractions for:', city);
     const attractionsResponse = await axios.get(
-      `https://api.opentripmap.com/0.1/en/places/radius?radius=5000&lon=${lon}&lat=${lat}&limit=5&offset=${(page - 1) * 5}&kinds=interesting_places&apikey=${process.env.OPENTRIPMAP_API_KEY}`
+      `https://api.opentripmap.com/0.1/en/places/radius?radius=5000&lon=${city.lon}&lat=${city.lat}&limit=5&offset=${(page - 1) * 5}&kinds=interesting_places&apikey=${process.env.OPENTRIPMAP_API_KEY}`
     );
     console.log('seeAttractions.js - Attractions API response:', JSON.stringify(attractionsResponse.data, null, 2));
 
@@ -72,7 +73,7 @@ export default async function handler(req, res) {
       <html>
         <head>
           <meta property="fc:frame" content="vNext" />
-          <meta property="fc:frame:image" content="${baseUrl}/api/generateImage?text=${encodeURIComponent(`Attractions in ${city}\n\n${attractionsList}`)}" />
+          <meta property="fc:frame:image" content="${baseUrl}/api/generateImage?text=${encodeURIComponent(`Attractions in ${city.name}\n\n${attractionsList}`)}" />
           ${page > 1 ? `<meta property="fc:frame:button:1" content="Previous" />` : ''}
           ${hasNextPage ? `<meta property="fc:frame:button:2" content="Next" />` : ''}
           <meta property="fc:frame:button:3" content="New Search" />
@@ -80,7 +81,7 @@ export default async function handler(req, res) {
           <meta property="fc:frame:post_url_target" content="post" />
         </head>
         <body>
-          <h1>Attractions in ${city}</h1>
+          <h1>Attractions in ${city.name}</h1>
         </body>
       </html>
     `;
@@ -94,7 +95,7 @@ export default async function handler(req, res) {
       console.error('seeAttractions.js - Error response:', error.response.status, error.response.statusText);
       console.error('seeAttractions.js - Error data:', JSON.stringify(error.response.data, null, 2));
     }
-    return sendErrorResponse(res, baseUrl, `Error: Failed to fetch attractions for ${city}`);
+    return sendErrorResponse(res, baseUrl, `Error: Failed to fetch attractions for ${city.name}`);
   }
 }
 
