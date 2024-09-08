@@ -1,12 +1,14 @@
 import axios from 'axios';
 
 export default async function handler(req, res) {
-  const { city } = req.query;
-  const page = parseInt(req.query.page) || 1;
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://sightseeing-seven.vercel.app';
 
+  // Handle both GET and POST requests
+  const { city, page: pageStr } = req.method === 'GET' ? req.query : req.body;
+  const page = parseInt(pageStr) || 1;
+
   if (!city) {
-    return res.status(400).json({ error: 'City name is required' });
+    return sendErrorResponse(res, baseUrl, 'City name is required');
   }
 
   try {
@@ -50,19 +52,23 @@ export default async function handler(req, res) {
     `);
   } catch (error) {
     console.error('Error fetching attractions:', error);
-    return res.setHeader('Content-Type', 'text/html').status(200).send(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta property="fc:frame" content="vNext" />
-          <meta property="fc:frame:image" content="${baseUrl}/api/generateImage?text=Error Fetching Attractions" />
-          <meta property="fc:frame:button:1" content="Try Again" />
-          <meta property="fc:frame:post_url" content="${baseUrl}/api/seeAttractions?city=${encodeURIComponent(city)}" />
-        </head>
-        <body>
-          <h1>Error: Failed to fetch attractions for ${city}. Please try again.</h1>
-        </body>
-      </html>
-    `);
+    return sendErrorResponse(res, baseUrl, `Error: Failed to fetch attractions for ${city}`);
   }
+}
+
+function sendErrorResponse(res, baseUrl, errorMessage) {
+  return res.setHeader('Content-Type', 'text/html').status(200).send(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta property="fc:frame" content="vNext" />
+        <meta property="fc:frame:image" content="${baseUrl}/api/generateErrorImage?text=${encodeURIComponent(errorMessage)}" />
+        <meta property="fc:frame:button:1" content="Try Again" />
+        <meta property="fc:frame:post_url" content="${baseUrl}/api/matchCity" />
+      </head>
+      <body>
+        <h1>${errorMessage}</h1>
+      </body>
+    </html>
+  `);
 }
