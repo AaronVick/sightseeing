@@ -65,6 +65,8 @@ export default async function handler(req, res) {
     const cityList = cities.map((city, index) => `${index + 1}: ${city.name}`).join('\n');
     const cityButtons = cities.map((city, index) => `
       <meta property="fc:frame:button:${index + 1}" content="${index + 1}" />
+      <meta property="fc:frame:post_url:${index + 1}" content="${baseUrl}/api/seeAttractions" />
+      <meta property="fc:frame:post_data:${index + 1}" content='{"cityIndex": ${index}}' />
     `).join('');
 
     const htmlResponse = `
@@ -74,7 +76,6 @@ export default async function handler(req, res) {
           <meta property="fc:frame" content="vNext" />
           <meta property="fc:frame:image" content="${baseUrl}/api/generateImage?text=${encodeURIComponent(cityList)}" />
           ${cityButtons}
-          <meta property="fc:frame:post_url" content="${baseUrl}/api/seeAttractions" />
           <meta property="fc:frame:post_url_target" content="post" />
         </head>
         <body>

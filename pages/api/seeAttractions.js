@@ -4,6 +4,10 @@ export default async function handler(req, res) {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://sightseeing-seven.vercel.app';
   const { cityIndex, page = 1 } = req.body;
 
+  if (cityIndex === undefined) {
+    return res.status(400).json({ error: 'City index is missing.' });
+  }
+
   const cityList = JSON.parse(process.env.CITY_LIST || '[]');
   const city = cityList[cityIndex] || {};
 
