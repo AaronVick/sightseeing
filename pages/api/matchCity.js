@@ -48,10 +48,10 @@ export default async function handler(req, res) {
 
     // Search for other cities with the same name worldwide
     const searchResponse = await axios.get(
-      `https://api.opentripmap.com/0.1/en/places/autosuggest?name=${encodeURIComponent(mainCity)}&radius=20000000&limit=10&apikey=${process.env.OPENTRIPMAP_API_KEY}`
+      `https://api.opentripmap.com/0.1/en/places/radius?radius=20000000&lon=${lon}&lat=${lat}&limit=20&apikey=${process.env.OPENTRIPMAP_API_KEY}`
     );
 
-    console.log('OpenTripMap Autosuggest API response:', JSON.stringify(searchResponse.data, null, 2));
+    console.log('OpenTripMap Radius Search API response:', JSON.stringify(searchResponse.data, null, 2));
 
     let cities = [`${mainCity}, ${country}`];
     
@@ -63,10 +63,14 @@ export default async function handler(req, res) {
       }
     });
 
-    // Ensure we have at least one option, but no more than 4
+    // If we don't have enough cities with the same name, add some nearby cities
     while (cities.length < 4 && cities.length < searchResponse.data.features.length) {
       const nextFeature = searchResponse.data.features[cities.length];
-      cities.push(`${nextFeature.properties.name}, ${nextFeature.properties.country}`);
+      const cityName = nextFeature.properties.name;
+      const cityCountry = nextFeature.properties.country;
+      if (!cities.includes(`${cityName}, ${cityCountry}`)) {
+        cities.push(`${cityName}, ${cityCountry}`);
+      }
     }
 
     cities = [...new Set(cities)].slice(0, 4); // Remove duplicates and limit to 4 options
