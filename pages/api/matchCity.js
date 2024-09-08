@@ -3,20 +3,17 @@ import axios from 'axios';
 export default async function handler(req, res) {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://sightseeing-seven.vercel.app';
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed. POST required.' });
-  }
+  console.log('Received request method:', req.method);
+  console.log('Request query:', req.query);
+  console.log('Request body:', req.body);
 
   let city_text = '';
-  if (req.body && typeof req.body === 'object') {
+  if (req.method === 'GET') {
+    city_text = req.query.city_text || '';
+  } else if (req.method === 'POST') {
     city_text = req.body.city_text || req.body.untrustedData?.inputText || '';
-  } else if (typeof req.body === 'string') {
-    try {
-      const parsedBody = JSON.parse(req.body);
-      city_text = parsedBody.city_text || parsedBody.untrustedData?.inputText || '';
-    } catch (error) {
-      console.error('Error parsing request body:', error);
-    }
+  } else {
+    return res.status(405).json({ error: 'Method Not Allowed. GET or POST required.' });
   }
 
   console.log('Received city_text:', city_text);
@@ -43,8 +40,6 @@ export default async function handler(req, res) {
 
     const mainCity = geonameResponse.data.name;
     const country = geonameResponse.data.country;
-    const lat = geonameResponse.data.lat;
-    const lon = geonameResponse.data.lon;
 
     // Create a list with just the main city
     let cities = [`${mainCity}, ${country}`];
@@ -59,7 +54,8 @@ export default async function handler(req, res) {
     const cityList = cities.map((city, index) => `${index + 1}: ${city}`).join('\n');
     const cityButtons = cities.map((city, index) => `
       <meta property="fc:frame:button:${index + 1}" content="${index + 1}" />
-      <meta property="fc:frame:post_url:${index + 1}" content="${baseUrl}/api/seeAttractions?city=${encodeURIComponent(city)}" />
+      <meta property="fc:frame:post_url:${index + 1}" content="${baseUrl}/api/seeAttractions" />
+      <meta property="fc:frame:post_url_target:${index + 1}" content="post" />
     `).join('');
 
     return res.setHeader('Content-Type', 'text/html').status(200).send(`

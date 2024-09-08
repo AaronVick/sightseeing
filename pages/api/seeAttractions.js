@@ -2,9 +2,7 @@ import axios from 'axios';
 
 export const config = {
   api: {
-    bodyParser: {
-      sizeLimit: '1mb',
-    },
+    bodyParser: true,
   },
 };
 
@@ -21,6 +19,11 @@ export default async function handler(req, res) {
     ({ city, page } = req.query);
   } else if (req.method === 'POST') {
     ({ city, page } = req.body);
+    if (!city && req.body.untrustedData) {
+      city = req.body.untrustedData.buttonIndex ? 
+        req.body.untrustedData[`cityOption${req.body.untrustedData.buttonIndex}`] : 
+        req.body.untrustedData.inputText;
+    }
   } else {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
