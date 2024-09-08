@@ -9,16 +9,14 @@ export default async function handler(req, res) {
 
   let cityIndex, page;
 
-  if (req.method === 'GET') {
-    ({ cityIndex, page } = req.query);
-  } else if (req.method === 'POST') {
-    ({ cityIndex, page } = req.body);
+  if (req.method === 'POST') {
+    const data = req.body;
+    cityIndex = parseInt(data.untrustedData?.buttonIndex || data.cityIndex || '1') - 1;
+    page = parseInt(data.page) || 1;
   } else {
-    return res.status(405).json({ error: 'Method Not Allowed' });
+    console.log('seeAttractions.js - Unsupported method:', req.method);
+    return res.status(405).json({ error: 'Method Not Allowed. POST required.' });
   }
-
-  cityIndex = parseInt(cityIndex) || 0;
-  page = parseInt(page) || 1;
 
   console.log('seeAttractions.js - Processed request:', { cityIndex, page });
 
@@ -53,9 +51,6 @@ export default async function handler(req, res) {
           <meta property="fc:frame:button:3" content="New Search" />
           <meta property="fc:frame:post_url" content="${baseUrl}/api/seeAttractions" />
           <meta property="fc:frame:post_url_target" content="post" />
-          ${page > 1 ? `<meta property="fc:frame:post_data:1" content='{"cityIndex": ${cityIndex}, "page": ${page - 1}}' />` : ''}
-          ${hasNextPage ? `<meta property="fc:frame:post_data:2" content='{"cityIndex": ${cityIndex}, "page": ${page + 1}}' />` : ''}
-          <meta property="fc:frame:post_data:3" content='' />
           <meta property="og:title" content="Attractions in ${city.name}" />
           <meta property="og:description" content="Explore top attractions" />
         </head>
