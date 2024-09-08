@@ -3,45 +3,25 @@ import axios from 'axios';
 export default async function handler(req, res) {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://sightseeing-seven.vercel.app';
 
-  console.log('matchCity.js - Received request method:', req.method);
-  console.log('matchCity.js - Request query:', JSON.stringify(req.query));
-  console.log('matchCity.js - Request body:', JSON.stringify(req.body));
-
   let city_text = '';
   if (req.method === 'GET') {
     city_text = req.query.city_text || '';
   } else if (req.method === 'POST') {
     city_text = req.body.city_text || req.body.untrustedData?.inputText || '';
   } else {
-    console.log('matchCity.js - Unsupported method:', req.method);
     return res.status(405).json({ error: 'Method Not Allowed. GET or POST required.' });
   }
 
-  console.log('matchCity.js - Processed city_text:', city_text);
-
   if (!city_text || city_text.trim() === '') {
-    console.log('matchCity.js - City input is missing.');
     return sendErrorResponse(res, baseUrl, 'Please Enter a City');
   }
 
   try {
-    console.log('matchCity.js - Fetching city data for:', city_text);
-
     const geonameResponse = await axios.get(
       `https://api.opentripmap.com/0.1/en/places/geoname?name=${encodeURIComponent(city_text)}&apikey=${process.env.OPENTRIPMAP_API_KEY}`
     );
 
-    console.log('matchCity.js - OpenTripMap Geoname API response:', JSON.stringify(geonameResponse.data, null, 2));
-
-    if (!geonameResponse.data || !geonameResponse.data.name) {
-      console.log('matchCity.js - No city found in the Geoname API response');
-      return sendErrorResponse(res, baseUrl, 'City Not Found');
-    }
-
-    const mainCity = geonameResponse.data.name;
-    const country = geonameResponse.data.country;
-    const lat = geonameResponse.data.lat;
-    const lon = geonameResponse.data.lon;
+    const { name: mainCity, country, lat, lon } = geonameResponse.data;
 
     let cities = [{
       name: `${mainCity}, ${country}`,
@@ -49,22 +29,13 @@ export default async function handler(req, res) {
       lon: lon
     }];
 
-    if (geonameResponse.data.partial_match) {
-      cities.unshift({
-        name: city_text,
-        lat: lat,
-        lon: lon
-      });
-    }
-
-    console.log('matchCity.js - Final Cities List:', cities);
-
-    // Store the cities list in an environment variable
     process.env.CITY_LIST = JSON.stringify(cities);
 
     const cityList = cities.map((city, index) => `${index + 1}: ${city.name}`).join('\n');
+
     const cityButtons = cities.map((city, index) => `
       <meta property="fc:frame:button:${index + 1}" content="${index + 1}" />
+      <meta property="fc:frame:post_data:${index + 1}" content='{"cityIndex": ${index}}' />
     `).join('');
 
     const htmlResponse = `
@@ -83,22 +54,14 @@ export default async function handler(req, res) {
       </html>
     `;
 
-    console.log('matchCity.js - Sending HTML response:', htmlResponse);
-
     return res.setHeader('Content-Type', 'text/html').status(200).send(htmlResponse);
 
   } catch (error) {
-    console.error('matchCity.js - Error fetching cities:', error);
-    if (error.response) {
-      console.error('matchCity.js - Error response:', error.response.status, error.response.statusText);
-      console.error('matchCity.js - Error data:', JSON.stringify(error.response.data, null, 2));
-    }
     return sendErrorResponse(res, baseUrl, 'Error Fetching Cities');
   }
 }
 
 function sendErrorResponse(res, baseUrl, errorMessage) {
-  console.log('matchCity.js - Sending error response:', errorMessage);
   return res.setHeader('Content-Type', 'text/html').status(200).send(`
     <!DOCTYPE html>
     <html>

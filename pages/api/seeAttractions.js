@@ -1,24 +1,12 @@
 import axios from 'axios';
 
 export default async function handler(req, res) {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://sightseeing-seven.vercel.app';
-  
-  console.log('seeAttractions.js - Received request method:', req.method);
-  console.log('seeAttractions.js - Request query:', JSON.stringify(req.query));
-  console.log('seeAttractions.js - Request body:', JSON.stringify(req.body));
-
-  let cityIndex, attractionIndex;
-
-  if (req.method === 'POST') {
-    const data = req.body;
-    cityIndex = parseInt(data.cityIndex || data.untrustedData?.cityIndex || '0');
-    attractionIndex = parseInt(data.attractionIndex || data.untrustedData?.buttonIndex || '1') - 1;
-  } else {
-    console.log('seeAttractions.js - Unsupported method:', req.method);
+  if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed. POST required.' });
   }
 
-  console.log('seeAttractions.js - Processed request:', { cityIndex, attractionIndex });
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://sightseeing-seven.vercel.app';
+  const { cityIndex, attractionIndex = 0 } = req.body;
 
   const cityList = JSON.parse(process.env.CITY_LIST || '[]');
   const city = cityList[cityIndex];
@@ -37,10 +25,6 @@ export default async function handler(req, res) {
       kind: feature.properties.kinds.split(',')[0] || 'No category',
       xid: feature.properties.xid
     }));
-
-    if (attractionIndex < 0 || attractionIndex >= attractions.length) {
-      attractionIndex = 0;
-    }
 
     const attraction = attractions[attractionIndex];
     const attractionDetails = await getAttractionDetails(attraction.xid);
@@ -71,14 +55,11 @@ export default async function handler(req, res) {
       </html>
     `;
 
-    console.log('seeAttractions.js - Sending HTML response:', htmlResponse);
-
     return res
       .setHeader('Content-Type', 'text/html; charset=utf-8')
       .status(200)
       .send(htmlResponse);
   } catch (error) {
-    console.error('seeAttractions.js - Error fetching attractions:', error);
     return sendErrorResponse(res, baseUrl, 'Failed to fetch attractions.');
   }
 }
@@ -93,13 +74,11 @@ async function getAttractionDetails(xid) {
       image: response.data.preview?.source || null
     };
   } catch (error) {
-    console.error('Error fetching attraction details:', error);
     return { description: null, image: null };
   }
 }
 
 function sendErrorResponse(res, baseUrl, errorMessage) {
-  console.log('seeAttractions.js - Sending error response:', errorMessage);
   const htmlErrorResponse = `
     <!DOCTYPE html>
     <html>
