@@ -40,7 +40,16 @@ export default async function handler(req, res) {
       `https://api.opentripmap.com/0.1/en/places/geoname?name=${encodeURIComponent(city_text)}&apikey=${process.env.OPENTRIPMAP_API_KEY}`
     );
 
-    const cities = response.data.name ? [response.data.name] : [];
+    console.log('OpenTripMap API response:', response.data);
+
+    let cities = [];
+    if (response.data.status === 'OK') {
+      if (Array.isArray(response.data.results)) {
+        cities = response.data.results.map(result => result.name);
+      } else if (response.data.name) {
+        cities = [response.data.name];
+      }
+    }
 
     console.log('Matched Cities:', cities);
 
