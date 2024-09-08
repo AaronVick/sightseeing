@@ -23,21 +23,7 @@ export default async function handler(req, res) {
 
   if (!city_text || city_text.trim() === '') {
     console.log('City input is missing.');
-    return res.setHeader('Content-Type', 'text/html').status(200).send(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta property="fc:frame" content="vNext" />
-          <meta property="fc:frame:image" content="${baseUrl}/api/generateErrorImage?text=Please Enter a City" />
-          <meta property="fc:frame:button:1" content="Try Again" />
-          <meta property="fc:frame:post_url" content="${baseUrl}/api/matchCity" />
-          <meta property="fc:frame:input:text" content="Enter a city" />
-        </head>
-        <body>
-          <h1>Please Enter a City</h1>
-        </body>
-      </html>
-    `);
+    return sendErrorResponse(res, baseUrl, 'Please Enter a City');
   }
 
   try {
@@ -48,11 +34,11 @@ export default async function handler(req, res) {
       `https://api.opentripmap.com/0.1/en/places/geoname?name=${encodeURIComponent(city_text)}&apikey=${process.env.OPENTRIPMAP_API_KEY}`
     );
 
-    console.log('OpenTripMap Geoname API response:', geonameResponse.data);
+    console.log('OpenTripMap Geoname API response:', JSON.stringify(geonameResponse.data, null, 2));
 
     if (!geonameResponse.data || !geonameResponse.data.name) {
       console.log('No city found in the Geoname API response');
-      throw new Error('No city found');
+      return sendErrorResponse(res, baseUrl, 'City Not Found');
     }
 
     const mainCity = geonameResponse.data.name;
@@ -63,7 +49,7 @@ export default async function handler(req, res) {
       `https://api.opentripmap.com/0.1/en/places/autosuggest?name=${encodeURIComponent(mainCity)}&radius=100000&limit=3&apikey=${process.env.OPENTRIPMAP_API_KEY}`
     );
 
-    console.log('OpenTripMap Autosuggest API response:', autosuggestResponse.data);
+    console.log('OpenTripMap Autosuggest API response:', JSON.stringify(autosuggestResponse.data, null, 2));
 
     let cities = [
       `${mainCity}, ${country}`,
@@ -103,21 +89,25 @@ export default async function handler(req, res) {
     `);
 
   } catch (error) {
-    console.error('Error fetching cities:', error.response ? error.response.data : error.message);
-    return res.setHeader('Content-Type', 'text/html').status(200).send(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta property="fc:frame" content="vNext" />
-          <meta property="fc:frame:image" content="${baseUrl}/api/generateErrorImage?text=Error Fetching Cities" />
-          <meta property="fc:frame:button:1" content="Retry" />
-          <meta property="fc:frame:post_url" content="${baseUrl}/api/matchCity" />
-          <meta property="fc:frame:input:text" content="Enter a city" />
-        </head>
-        <body>
-          <h1>Error: Failed to fetch cities. Please try again.</h1>
-        </body>
-      </html>
-    `);
+    console.error('Error fetching cities:', error.response ? JSON.stringify(error.response.data, null, 2) : error.message);
+    return sendErrorResponse(res, baseUrl, 'Error Fetching Cities');
   }
+}
+
+function sendErrorResponse(res, baseUrl, errorMessage) {
+  return res.setHeader('Content-Type', 'text/html').status(200).send(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta property="fc:frame" content="vNext" />
+        <meta property="fc:frame:image" content="${baseUrl}/api/generateErrorImage?text=${encodeURIComponent(errorMessage)}" />
+        <meta property="fc:frame:button:1" content="Retry" />
+        <meta property="fc:frame:post_url" content="${baseUrl}/api/matchCity" />
+        <meta property="fc:frame:input:text" content="Enter a city" />
+      </head>
+      <body>
+        <h1>${errorMessage}</h1>
+      </body>
+    </html>
+  `);
 }
