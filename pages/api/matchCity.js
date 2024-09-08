@@ -9,12 +9,23 @@ export default async function handler(req, res) {
   }
 
   // Extract city_text from the request body
-  const { city_text } = req.body;
+  let city_text = '';
+  if (req.body && typeof req.body === 'object') {
+    city_text = req.body.city_text || req.body.untrustedData?.inputText || '';
+  } else if (typeof req.body === 'string') {
+    try {
+      const parsedBody = JSON.parse(req.body);
+      city_text = parsedBody.city_text || parsedBody.untrustedData?.inputText || '';
+    } catch (error) {
+      console.error('Error parsing request body:', error);
+    }
+  }
+
+  console.log('Received city_text:', city_text);
 
   if (!city_text || city_text.trim() === '') {
     console.log('City input is missing.');
 
-    // Return an HTML response with Farcaster meta tags for missing city input
     return res.setHeader('Content-Type', 'text/html').status(200).send(`
       <!DOCTYPE html>
       <html>
@@ -43,12 +54,8 @@ export default async function handler(req, res) {
     console.log('OpenTripMap API response:', response.data);
 
     let cities = [];
-    if (response.data.status === 'OK') {
-      if (Array.isArray(response.data.results)) {
-        cities = response.data.results.map(result => result.name);
-      } else if (response.data.name) {
-        cities = [response.data.name];
-      }
+    if (response.data && response.data.name) {
+      cities = [response.data.name];
     }
 
     console.log('Matched Cities:', cities);
