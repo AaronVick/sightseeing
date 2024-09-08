@@ -89,7 +89,11 @@ export default async function handler(req, res) {
     `);
 
   } catch (error) {
-    console.error('Error fetching cities:', error.response ? JSON.stringify(error.response.data, null, 2) : error.message);
+    console.error('Error fetching cities:', error);
+    if (error.response) {
+      console.error('Error response:', error.response.status, error.response.statusText);
+      console.error('Error data:', JSON.stringify(error.response.data, null, 2));
+    }
     return sendErrorResponse(res, baseUrl, 'Error Fetching Cities');
   }
 }
