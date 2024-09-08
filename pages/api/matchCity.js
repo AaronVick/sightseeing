@@ -2,7 +2,7 @@ import axios from 'axios';
 
 export default async function handler(req, res) {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://sightseeing-seven.vercel.app';
-
+  
   console.log('matchCity.js - Received request method:', req.method);
   console.log('matchCity.js - Request query:', JSON.stringify(req.query));
   console.log('matchCity.js - Request body:', JSON.stringify(req.body));
