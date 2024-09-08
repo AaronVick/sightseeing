@@ -16,8 +16,8 @@ export default async function handler(req, res) {
 
   let cityIndex, page;
 
-  if (req.method === 'GET' || req.method === 'POST') {
-    const data = req.method === 'GET' ? req.query : req.body;
+  if (req.method === 'POST') {
+    const data = req.body;
     cityIndex = parseInt(data.untrustedData?.buttonIndex || data.cityIndex || '1') - 1;
     page = parseInt(data.page) || 1;
 
@@ -78,6 +78,7 @@ export default async function handler(req, res) {
           ${hasNextPage ? `<meta property="fc:frame:button:2" content="Next" />` : ''}
           <meta property="fc:frame:button:3" content="New Search" />
           <meta property="fc:frame:post_url" content="${baseUrl}/api/seeAttractions" />
+          <meta property="fc:frame:post_url_target" content="post" />
           <meta property="og:title" content="Attractions in ${city.name}" />
           <meta property="og:description" content="Explore top attractions" />
         </head>
@@ -111,6 +112,7 @@ function sendErrorResponse(res, baseUrl, errorMessage) {
         <meta property="fc:frame:image" content="${baseUrl}/api/generateErrorImage?text=${encodeURIComponent(errorMessage)}" />
         <meta property="fc:frame:button:1" content="Try Again" />
         <meta property="fc:frame:post_url" content="${baseUrl}/api/matchCity" />
+        <meta property="fc:frame:post_url_target" content="post" />
         <meta property="fc:frame:input:text" content="Enter a city" />
         <meta property="og:title" content="Error" />
         <meta property="og:description" content="${errorMessage}" />
