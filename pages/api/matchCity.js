@@ -43,19 +43,21 @@ export default async function handler(req, res) {
 
     const mainCity = geonameResponse.data.name;
     const country = geonameResponse.data.country;
+    const lat = geonameResponse.data.lat;
+    const lon = geonameResponse.data.lon;
 
-    // Now, use autosuggest to find related cities
-    const autosuggestResponse = await axios.get(
-      `https://api.opentripmap.com/0.1/en/places/autosuggest?name=${encodeURIComponent(mainCity)}&radius=100000&limit=3&apikey=${process.env.OPENTRIPMAP_API_KEY}`
+    // Now, use radius search to find nearby places
+    const radiusResponse = await axios.get(
+      `https://api.opentripmap.com/0.1/en/places/radius?radius=100000&lon=${lon}&lat=${lat}&limit=3&apikey=${process.env.OPENTRIPMAP_API_KEY}`
     );
 
-    console.log('OpenTripMap Autosuggest API response:', JSON.stringify(autosuggestResponse.data, null, 2));
+    console.log('OpenTripMap Radius Search API response:', JSON.stringify(radiusResponse.data, null, 2));
 
     let cities = [
       `${mainCity}, ${country}`,
-      ...autosuggestResponse.data.features
+      ...radiusResponse.data.features
         .map(feature => feature.properties.name)
-        .filter(name => name !== mainCity)
+        .filter(name => name !== mainCity && name.trim() !== '')
         .map(name => `${name}, ${country}`)
     ];
 
