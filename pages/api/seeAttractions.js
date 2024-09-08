@@ -46,16 +46,17 @@ export default async function handler(req, res) {
     const attractionDetails = await getAttractionDetails(attraction.xid);
 
     const imageUrl = `${baseUrl}/api/attractionImage?` + new URLSearchParams({
-      name: attraction.name,
-      description: attractionDetails.description || 'No description available',
-      category: attraction.kind,
-      image: attractionDetails.image || ''
-    });
+      name: encodeURIComponent(attraction.name),
+      description: encodeURIComponent(attractionDetails.description || 'No description available'),
+      category: encodeURIComponent(attraction.kind),
+      image: encodeURIComponent(attractionDetails.image || '')
+    }).toString();
 
     const htmlResponse = `
       <!DOCTYPE html>
       <html>
         <head>
+          <meta charset="utf-8">
           <meta property="fc:frame" content="vNext" />
           <meta property="fc:frame:image" content="${imageUrl}" />
           ${attractionIndex > 0 ? `<meta property="fc:frame:button:1" content="Previous" />` : ''}
@@ -72,7 +73,10 @@ export default async function handler(req, res) {
 
     console.log('seeAttractions.js - Sending HTML response:', htmlResponse);
 
-    return res.setHeader('Content-Type', 'text/html').status(200).send(htmlResponse);
+    return res
+      .setHeader('Content-Type', 'text/html; charset=utf-8')
+      .status(200)
+      .send(htmlResponse);
   } catch (error) {
     console.error('seeAttractions.js - Error fetching attractions:', error);
     return sendErrorResponse(res, baseUrl, 'Failed to fetch attractions.');
@@ -100,6 +104,7 @@ function sendErrorResponse(res, baseUrl, errorMessage) {
     <!DOCTYPE html>
     <html>
       <head>
+        <meta charset="utf-8">
         <meta property="fc:frame" content="vNext" />
         <meta property="fc:frame:image" content="${baseUrl}/api/generateErrorImage?text=${encodeURIComponent(errorMessage)}" />
         <meta property="fc:frame:button:1" content="Try Again" />
@@ -110,5 +115,8 @@ function sendErrorResponse(res, baseUrl, errorMessage) {
       </body>
     </html>
   `;
-  return res.setHeader('Content-Type', 'text/html').status(200).send(htmlErrorResponse);
+  return res
+    .setHeader('Content-Type', 'text/html; charset=utf-8')
+    .status(200)
+    .send(htmlErrorResponse);
 }
