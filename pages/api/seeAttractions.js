@@ -45,14 +45,10 @@ export default async function handler(req, res) {
       <html>
         <head>
           <meta property="fc:frame" content="vNext" />
-          <meta property="fc:frame:image" content="${baseUrl}/api/generateImage?text=Attractions%20in%20${encodeURIComponent(city.name)}%0A${encodeURIComponent(attractionList)}" />
-          ${page > 1 ? `<meta property="fc:frame:button:1" content="Previous" />` : ''}
+          <meta property="fc:frame:image" content="${baseUrl}/api/generateImage?text=${encodeURIComponent(`Attractions in ${city.name}\n\n${attractionList}`)}" />
+          <meta property="fc:frame:button:1" content="${page > 1 ? 'Previous' : 'New Search'}" />
           ${hasNextPage ? `<meta property="fc:frame:button:2" content="Next" />` : ''}
-          <meta property="fc:frame:button:3" content="New Search" />
           <meta property="fc:frame:post_url" content="${baseUrl}/api/seeAttractions" />
-          <meta property="fc:frame:post_url_target" content="post" />
-          <meta property="og:title" content="Attractions in ${city.name}" />
-          <meta property="og:description" content="Explore top attractions" />
         </head>
         <body>
           <h1>Attractions in ${city.name}</h1>
@@ -80,10 +76,6 @@ function sendErrorResponse(res, baseUrl, errorMessage) {
         <meta property="fc:frame:image" content="${baseUrl}/api/generateErrorImage?text=${encodeURIComponent(errorMessage)}" />
         <meta property="fc:frame:button:1" content="Try Again" />
         <meta property="fc:frame:post_url" content="${baseUrl}/api/matchCity" />
-        <meta property="fc:frame:post_url_target" content="post" />
-        <meta property="fc:frame:input:text" content="Enter a city" />
-        <meta property="og:title" content="Error" />
-        <meta property="og:description" content="${errorMessage}" />
       </head>
       <body>
         <h1>${errorMessage}</h1>
