@@ -29,61 +29,47 @@ export default async function handler(req, res) {
   try {
     console.log('City text to search:', city_text);
 
-    // First, try to get an exact match
-    const exactMatchResponse = await axios.get(
+    // First, get the main city
+    const geonameResponse = await axios.get(
       `https://api.opentripmap.com/0.1/en/places/geoname?name=${encodeURIComponent(city_text)}&apikey=${process.env.OPENTRIPMAP_API_KEY}`
     );
 
-    console.log('OpenTripMap Exact Match API response:', JSON.stringify(exactMatchResponse.data, null, 2));
+    console.log('OpenTripMap Geoname API response:', JSON.stringify(geonameResponse.data, null, 2));
 
-    let mainCity, country, lat, lon;
-
-    if (exactMatchResponse.data && exactMatchResponse.data.name) {
-      mainCity = exactMatchResponse.data.name;
-      country = exactMatchResponse.data.country;
-      lat = exactMatchResponse.data.lat;
-      lon = exactMatchResponse.data.lon;
-    } else {
-      // If no exact match, search for the first part of the input (e.g., "Paris" from "Paris, France")
-      const cityPart = city_text.split(',')[0].trim();
-      const fallbackResponse = await axios.get(
-        `https://api.opentripmap.com/0.1/en/places/geoname?name=${encodeURIComponent(cityPart)}&apikey=${process.env.OPENTRIPMAP_API_KEY}`
-      );
-
-      console.log('OpenTripMap Fallback API response:', JSON.stringify(fallbackResponse.data, null, 2));
-
-      if (!fallbackResponse.data || !fallbackResponse.data.name) {
-        console.log('No city found in the Geoname API response');
-        return sendErrorResponse(res, baseUrl, 'City Not Found');
-      }
-
-      mainCity = fallbackResponse.data.name;
-      country = fallbackResponse.data.country;
-      lat = fallbackResponse.data.lat;
-      lon = fallbackResponse.data.lon;
+    if (!geonameResponse.data || !geonameResponse.data.name) {
+      console.log('No city found in the Geoname API response');
+      return sendErrorResponse(res, baseUrl, 'City Not Found');
     }
 
-    // Now, use autosuggest to find related cities worldwide
-    const autosuggestResponse = await axios.get(
-      `https://api.opentripmap.com/0.1/en/places/autosuggest?name=${encodeURIComponent(mainCity)}&radius=5000000&limit=10&apikey=${process.env.OPENTRIPMAP_API_KEY}`
+    const mainCity = geonameResponse.data.name;
+    const country = geonameResponse.data.country;
+    const lat = geonameResponse.data.lat;
+    const lon = geonameResponse.data.lon;
+
+    // Search for other cities with the same name worldwide
+    const searchResponse = await axios.get(
+      `https://api.opentripmap.com/0.1/en/places/autosuggest?name=${encodeURIComponent(mainCity)}&radius=20000000&limit=10&apikey=${process.env.OPENTRIPMAP_API_KEY}`
     );
 
-    console.log('OpenTripMap Autosuggest API response:', JSON.stringify(autosuggestResponse.data, null, 2));
+    console.log('OpenTripMap Autosuggest API response:', JSON.stringify(searchResponse.data, null, 2));
 
-    let cities = [
-      `${mainCity}, ${country}`,
-      ...autosuggestResponse.data.features
-        .map(feature => `${feature.properties.name}, ${feature.properties.country}`)
-        .filter(name => name !== `${mainCity}, ${country}`)
-    ];
+    let cities = [`${mainCity}, ${country}`];
+    
+    searchResponse.data.features.forEach(feature => {
+      const name = feature.properties.name;
+      const featureCountry = feature.properties.country;
+      if (name.toLowerCase() === mainCity.toLowerCase() && featureCountry !== country) {
+        cities.push(`${name}, ${featureCountry}`);
+      }
+    });
 
-    // Remove duplicates and limit to 4 options
-    cities = [...new Set(cities)].slice(0, 4);
-
-    // Ensure we have 4 options by adding generic options if needed
-    while (cities.length < 4) {
-      cities.push(`${mainCity} Area, ${country}`);
+    // Ensure we have at least one option, but no more than 4
+    while (cities.length < 4 && cities.length < searchResponse.data.features.length) {
+      const nextFeature = searchResponse.data.features[cities.length];
+      cities.push(`${nextFeature.properties.name}, ${nextFeature.properties.country}`);
     }
+
+    cities = [...new Set(cities)].slice(0, 4); // Remove duplicates and limit to 4 options
 
     console.log('Final Cities List:', cities);
 
