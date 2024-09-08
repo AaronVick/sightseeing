@@ -29,44 +29,61 @@ export default async function handler(req, res) {
   try {
     console.log('City text to search:', city_text);
 
-    // First, get the main city
-    const geonameResponse = await axios.get(
+    // First, try to get an exact match
+    const exactMatchResponse = await axios.get(
       `https://api.opentripmap.com/0.1/en/places/geoname?name=${encodeURIComponent(city_text)}&apikey=${process.env.OPENTRIPMAP_API_KEY}`
     );
 
-    console.log('OpenTripMap Geoname API response:', JSON.stringify(geonameResponse.data, null, 2));
+    console.log('OpenTripMap Exact Match API response:', JSON.stringify(exactMatchResponse.data, null, 2));
 
-    if (!geonameResponse.data || !geonameResponse.data.name) {
-      console.log('No city found in the Geoname API response');
-      return sendErrorResponse(res, baseUrl, 'City Not Found');
+    let mainCity, country, lat, lon;
+
+    if (exactMatchResponse.data && exactMatchResponse.data.name) {
+      mainCity = exactMatchResponse.data.name;
+      country = exactMatchResponse.data.country;
+      lat = exactMatchResponse.data.lat;
+      lon = exactMatchResponse.data.lon;
+    } else {
+      // If no exact match, search for the first part of the input (e.g., "Paris" from "Paris, France")
+      const cityPart = city_text.split(',')[0].trim();
+      const fallbackResponse = await axios.get(
+        `https://api.opentripmap.com/0.1/en/places/geoname?name=${encodeURIComponent(cityPart)}&apikey=${process.env.OPENTRIPMAP_API_KEY}`
+      );
+
+      console.log('OpenTripMap Fallback API response:', JSON.stringify(fallbackResponse.data, null, 2));
+
+      if (!fallbackResponse.data || !fallbackResponse.data.name) {
+        console.log('No city found in the Geoname API response');
+        return sendErrorResponse(res, baseUrl, 'City Not Found');
+      }
+
+      mainCity = fallbackResponse.data.name;
+      country = fallbackResponse.data.country;
+      lat = fallbackResponse.data.lat;
+      lon = fallbackResponse.data.lon;
     }
 
-    const mainCity = geonameResponse.data.name;
-    const country = geonameResponse.data.country;
-    const lat = geonameResponse.data.lat;
-    const lon = geonameResponse.data.lon;
-
-    // Now, use radius search to find nearby places
-    const radiusResponse = await axios.get(
-      `https://api.opentripmap.com/0.1/en/places/radius?radius=100000&lon=${lon}&lat=${lat}&limit=3&apikey=${process.env.OPENTRIPMAP_API_KEY}`
+    // Now, use autosuggest to find related cities worldwide
+    const autosuggestResponse = await axios.get(
+      `https://api.opentripmap.com/0.1/en/places/autosuggest?name=${encodeURIComponent(mainCity)}&radius=5000000&limit=10&apikey=${process.env.OPENTRIPMAP_API_KEY}`
     );
 
-    console.log('OpenTripMap Radius Search API response:', JSON.stringify(radiusResponse.data, null, 2));
+    console.log('OpenTripMap Autosuggest API response:', JSON.stringify(autosuggestResponse.data, null, 2));
 
     let cities = [
       `${mainCity}, ${country}`,
-      ...radiusResponse.data.features
-        .map(feature => feature.properties.name)
-        .filter(name => name !== mainCity && name.trim() !== '')
-        .map(name => `${name}, ${country}`)
+      ...autosuggestResponse.data.features
+        .map(feature => `${feature.properties.name}, ${feature.properties.country}`)
+        .filter(name => name !== `${mainCity}, ${country}`)
     ];
+
+    // Remove duplicates and limit to 4 options
+    cities = [...new Set(cities)].slice(0, 4);
 
     // Ensure we have 4 options by adding generic options if needed
     while (cities.length < 4) {
       cities.push(`${mainCity} Area, ${country}`);
     }
-
-    cities = cities.slice(0, 4); // Limit to 4 options
 
     console.log('Final Cities List:', cities);
 
