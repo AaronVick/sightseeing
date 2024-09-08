@@ -10,26 +10,29 @@ export default async function handler(req, res) {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://sightseeing-seven.vercel.app';
 
   console.log('seeAttractions.js - Received request method:', req.method);
+  console.log('seeAttractions.js - Request headers:', JSON.stringify(req.headers, null, 2));
   console.log('seeAttractions.js - Request query:', JSON.stringify(req.query));
   console.log('seeAttractions.js - Request body:', JSON.stringify(req.body));
 
   let city, page;
 
-  if (req.method === 'GET') {
-    ({ city, page } = req.query);
-  } else if (req.method === 'POST') {
-    ({ city, page } = req.body);
-    if (!city && req.body.untrustedData) {
-      city = req.body.untrustedData.buttonIndex ? 
-        req.body.untrustedData[`cityOption${req.body.untrustedData.buttonIndex}`] : 
-        req.body.untrustedData.inputText;
+  if (req.method === 'GET' || req.method === 'POST') {
+    // Handle both GET and POST requests
+    const data = req.method === 'GET' ? req.query : req.body;
+    city = data.city || data.untrustedData?.inputText || '';
+    page = parseInt(data.page) || 1;
+
+    // Check for Farcaster-specific data
+    if (data.untrustedData) {
+      const buttonIndex = data.untrustedData.buttonIndex;
+      if (buttonIndex && data[`cityOption${buttonIndex}`]) {
+        city = data[`cityOption${buttonIndex}`];
+      }
     }
   } else {
     console.log('seeAttractions.js - Unsupported method:', req.method);
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
-
-  page = parseInt(page) || 1;
 
   console.log('seeAttractions.js - Processed request:', { city, page });
 
