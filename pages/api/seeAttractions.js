@@ -1,6 +1,11 @@
 import axios from 'axios';
 
 export default async function handler(req, res) {
+  // Only allow POST method
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
+
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://sightseeing-seven.vercel.app';
   const { cityIndex, page = 1 } = req.body;
 
