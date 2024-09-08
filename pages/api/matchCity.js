@@ -28,7 +28,7 @@ export default async function handler(req, res) {
       <html>
         <head>
           <meta property="fc:frame" content="vNext" />
-          <meta property="fc:frame:image" content="${baseUrl}/api/generateImage?text=Please Enter a City" />
+          <meta property="fc:frame:image" content="${baseUrl}/api/generateErrorImage?text=Please Enter a City" />
           <meta property="fc:frame:button:1" content="Try Again" />
           <meta property="fc:frame:post_url" content="${baseUrl}/api/matchCity" />
           <meta property="fc:frame:input:text" content="Enter a city" />
@@ -44,37 +44,31 @@ export default async function handler(req, res) {
     console.log('City text to search:', city_text);
 
     const response = await axios.get(
-      `https://api.opentripmap.com/0.1/en/places/autosuggest?name=${encodeURIComponent(city_text)}&radius=100000&limit=4&apikey=${process.env.OPENTRIPMAP_API_KEY}`
+      `https://api.opentripmap.com/0.1/en/places/geoname?name=${encodeURIComponent(city_text)}&apikey=${process.env.OPENTRIPMAP_API_KEY}`
     );
 
     console.log('OpenTripMap API response:', response.data);
 
-    const cities = response.data.features.map(feature => feature.properties.name);
-
-    console.log('Matched Cities:', cities);
-
-    if (cities.length === 0) {
-      return res.setHeader('Content-Type', 'text/html').status(200).send(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta property="fc:frame" content="vNext" />
-            <meta property="fc:frame:image" content="${baseUrl}/api/generateImage?text=No Cities Found" />
-            <meta property="fc:frame:button:1" content="Try Again" />
-            <meta property="fc:frame:post_url" content="${baseUrl}/api/matchCity" />
-            <meta property="fc:frame:input:text" content="Enter a city" />
-          </head>
-          <body>
-            <h1>No cities found matching "${city_text}"</h1>
-          </body>
-        </html>
-      `);
+    if (!response.data || !response.data.name) {
+      console.log('No city found in the API response');
+      throw new Error('No city found');
     }
 
+    const mainCity = response.data.name;
+    const country = response.data.country;
+    const cities = [
+      `${mainCity}, ${country}`,
+      `${mainCity} City, ${country}`,
+      `${mainCity} Metropolitan Area, ${country}`,
+      `Greater ${mainCity}, ${country}`
+    ];
+
+    console.log('Generated Cities:', cities);
+
     const cityList = cities.map((city, index) => `${index + 1}: ${city}`).join('\n');
-    const cityButtons = cities.map((_, index) => `
+    const cityButtons = cities.map((city, index) => `
       <meta property="fc:frame:button:${index + 1}" content="${index + 1}" />
-      <meta property="fc:frame:post_url:${index + 1}" content="${baseUrl}/api/seeAttractions?city=${encodeURIComponent(cities[index])}" />
+      <meta property="fc:frame:post_url:${index + 1}" content="${baseUrl}/api/seeAttractions?city=${encodeURIComponent(city)}" />
     `).join('');
 
     return res.setHeader('Content-Type', 'text/html').status(200).send(`
@@ -98,7 +92,7 @@ export default async function handler(req, res) {
       <html>
         <head>
           <meta property="fc:frame" content="vNext" />
-          <meta property="fc:frame:image" content="${baseUrl}/api/generateImage?text=Error Fetching Cities" />
+          <meta property="fc:frame:image" content="${baseUrl}/api/generateErrorImage?text=Error Fetching Cities" />
           <meta property="fc:frame:button:1" content="Retry" />
           <meta property="fc:frame:post_url" content="${baseUrl}/api/matchCity" />
           <meta property="fc:frame:input:text" content="Enter a city" />

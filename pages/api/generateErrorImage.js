@@ -6,9 +6,7 @@ export const config = {
 
 export default async function handler(req) {
   const { searchParams } = new URL(req.url);
-  const text = searchParams.get('text') || 'No cities found';
-
-  const lines = text.split('\n');
+  const text = searchParams.get('text') || 'An error occurred';
 
   const imageResponse = new ImageResponse(
     (
@@ -20,20 +18,15 @@ export default async function handler(req) {
           alignItems: 'center',
           height: '100%',
           width: '100%',
-          backgroundColor: '#1E40AF',
+          backgroundColor: '#DC2626',
           color: 'white',
           fontSize: '32px',
           fontWeight: 'bold',
-          textAlign: 'left',
-          padding: '40px',
+          textAlign: 'center',
+          padding: '20px',
         }}
       >
-        <h1 style={{ marginBottom: '20px', fontSize: '48px' }}>Matching Cities:</h1>
-        {lines.map((line, index) => (
-          <div key={index} style={{ marginBottom: '15px' }}>
-            {line}
-          </div>
-        ))}
+        <h1>{text}</h1>
       </div>
     ),
     {
