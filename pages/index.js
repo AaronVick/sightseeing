@@ -17,24 +17,22 @@ export default function Home() {
     console.log(`Looking up city: ${city}`);
 
     try {
-      // Sending the POST request to the server with the city_text variable
       const res = await fetch(`${baseUrl}/api/matchCity`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ city_text: city }),  // Send city value as city_text
+        body: JSON.stringify({ city_text: city }),
       });
 
-      // Log the response status
       console.log('Response status:', res.status);
 
       if (!res.ok) {
         throw new Error(`Error fetching data: ${res.statusText}`);
       }
 
-      const result = await res.text();  // Using `.text()` for HTML response
-      document.body.innerHTML = result;  // Replace the body content with the returned HTML
+      const result = await res.text();
+      document.body.innerHTML = result;
 
     } catch (error) {
       console.error('Error during fetch:', error);
@@ -51,13 +49,8 @@ export default function Home() {
         <meta property="fc:frame" content="vNext" />
         <meta property="fc:frame:image" content={`${baseUrl}/travel.png`} />
         <meta property="fc:frame:button:1" content="Lookup City" />
-        <meta property="fc:frame:button:1:action" content="post" />
-        <meta property="fc:frame:post_url:1" content={`${baseUrl}/api/matchCity`} />
-
-        {/* Input for city */}
-        <meta property="fc:frame:input:text" content="Enter a city" />
-        <meta property="fc:frame:input:text:value" content={city} />
         <meta property="fc:frame:post_url" content={`${baseUrl}/api/matchCity`} />
+        <meta property="fc:frame:input:text" content="Enter a city" />
       </Head>
 
       <main style={{ textAlign: 'center', marginTop: '50px' }}>
