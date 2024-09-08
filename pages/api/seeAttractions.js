@@ -17,16 +17,16 @@ export default async function handler(req, res) {
   let city, page;
 
   if (req.method === 'GET' || req.method === 'POST') {
-    // Handle both GET and POST requests
     const data = req.method === 'GET' ? req.query : req.body;
-    city = data.city || data.untrustedData?.inputText || '';
+    city = data.city || data.untrustedData?.inputText || data.city_text || '';
     page = parseInt(data.page) || 1;
 
-    // Check for Farcaster-specific data
     if (data.untrustedData) {
       const buttonIndex = data.untrustedData.buttonIndex;
-      if (buttonIndex && data[`cityOption${buttonIndex}`]) {
-        city = data[`cityOption${buttonIndex}`];
+      if (buttonIndex === 1 && page > 1) {
+        page--;
+      } else if (buttonIndex === 2) {
+        page++;
       }
     }
   } else {
@@ -52,7 +52,7 @@ export default async function handler(req, res) {
 
     console.log('seeAttractions.js - Fetching attractions for:', { lat, lon, page });
     const attractionsResponse = await axios.get(
-      `https://api.opentripmap.com/0.1/en/places/radius?radius=5000&lon=${lon}&lat=${lat}&limit=5&offset=${(page - 1) * 5}&apikey=${process.env.OPENTRIPMAP_API_KEY}`
+      `https://api.opentripmap.com/0.1/en/places/radius?radius=5000&lon=${lon}&lat=${lat}&limit=5&offset=${(page - 1) * 5}&kinds=interesting_places&apikey=${process.env.OPENTRIPMAP_API_KEY}`
     );
     console.log('seeAttractions.js - Attractions API response:', JSON.stringify(attractionsResponse.data, null, 2));
 
@@ -73,15 +73,11 @@ export default async function handler(req, res) {
         <head>
           <meta property="fc:frame" content="vNext" />
           <meta property="fc:frame:image" content="${baseUrl}/api/generateImage?text=${encodeURIComponent(`Attractions in ${city}\n\n${attractionsList}`)}" />
-          ${page > 1 ? `<meta property="fc:frame:button:1" content="Previous" />
-          <meta property="fc:frame:post_url:1" content="${baseUrl}/api/seeAttractions" />
-          <meta property="fc:frame:post_url_target:1" content="post" />` : ''}
-          ${hasNextPage ? `<meta property="fc:frame:button:2" content="Next" />
-          <meta property="fc:frame:post_url:2" content="${baseUrl}/api/seeAttractions" />
-          <meta property="fc:frame:post_url_target:2" content="post" />` : ''}
+          ${page > 1 ? `<meta property="fc:frame:button:1" content="Previous" />` : ''}
+          ${hasNextPage ? `<meta property="fc:frame:button:2" content="Next" />` : ''}
           <meta property="fc:frame:button:3" content="New Search" />
-          <meta property="fc:frame:post_url:3" content="${baseUrl}/api/matchCity" />
-          <meta property="fc:frame:post_url_target:3" content="post" />
+          <meta property="fc:frame:post_url" content="${baseUrl}/api/seeAttractions" />
+          <meta property="fc:frame:post_url_target" content="post" />
         </head>
         <body>
           <h1>Attractions in ${city}</h1>
