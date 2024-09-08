@@ -43,27 +43,44 @@ export default async function handler(req, res) {
   try {
     console.log('City text to search:', city_text);
 
-    const response = await axios.get(
+    // First, get the main city
+    const geonameResponse = await axios.get(
       `https://api.opentripmap.com/0.1/en/places/geoname?name=${encodeURIComponent(city_text)}&apikey=${process.env.OPENTRIPMAP_API_KEY}`
     );
 
-    console.log('OpenTripMap API response:', response.data);
+    console.log('OpenTripMap Geoname API response:', geonameResponse.data);
 
-    if (!response.data || !response.data.name) {
-      console.log('No city found in the API response');
+    if (!geonameResponse.data || !geonameResponse.data.name) {
+      console.log('No city found in the Geoname API response');
       throw new Error('No city found');
     }
 
-    const mainCity = response.data.name;
-    const country = response.data.country;
-    const cities = [
+    const mainCity = geonameResponse.data.name;
+    const country = geonameResponse.data.country;
+
+    // Now, use autosuggest to find related cities
+    const autosuggestResponse = await axios.get(
+      `https://api.opentripmap.com/0.1/en/places/autosuggest?name=${encodeURIComponent(mainCity)}&radius=100000&limit=3&apikey=${process.env.OPENTRIPMAP_API_KEY}`
+    );
+
+    console.log('OpenTripMap Autosuggest API response:', autosuggestResponse.data);
+
+    let cities = [
       `${mainCity}, ${country}`,
-      `${mainCity} City, ${country}`,
-      `${mainCity} Metropolitan Area, ${country}`,
-      `Greater ${mainCity}, ${country}`
+      ...autosuggestResponse.data.features
+        .map(feature => feature.properties.name)
+        .filter(name => name !== mainCity)
+        .map(name => `${name}, ${country}`)
     ];
 
-    console.log('Generated Cities:', cities);
+    // Ensure we have 4 options by adding generic options if needed
+    while (cities.length < 4) {
+      cities.push(`${mainCity} Area, ${country}`);
+    }
+
+    cities = cities.slice(0, 4); // Limit to 4 options
+
+    console.log('Final Cities List:', cities);
 
     const cityList = cities.map((city, index) => `${index + 1}: ${city}`).join('\n');
     const cityButtons = cities.map((city, index) => `
