@@ -35,7 +35,7 @@ export default async function handler(req, res) {
 
     const cityButtons = cities.map((city, index) => `
       <meta property="fc:frame:button:${index + 1}" content="${index + 1}" />
-      <meta property="fc:frame:post_data:${index + 1}" content='{"cityIndex": ${index}}' />
+      <meta property="fc:frame:post_data:${index + 1}" content='{"cityIndex": ${index}, "lat": ${city.lat}, "lon": ${city.lon}}' />
     `).join('');
 
     const htmlResponse = `
@@ -59,22 +59,4 @@ export default async function handler(req, res) {
   } catch (error) {
     return sendErrorResponse(res, baseUrl, 'Error Fetching Cities');
   }
-}
-
-function sendErrorResponse(res, baseUrl, errorMessage) {
-  return res.setHeader('Content-Type', 'text/html').status(200).send(`
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta property="fc:frame" content="vNext" />
-        <meta property="fc:frame:image" content="${baseUrl}/api/generateErrorImage?text=${encodeURIComponent(errorMessage)}" />
-        <meta property="fc:frame:button:1" content="Retry" />
-        <meta property="fc:frame:post_url" content="${baseUrl}/api/matchCity" />
-        <meta property="fc:frame:input:text" content="Enter a city" />
-      </head>
-      <body>
-        <h1>${errorMessage}</h1>
-      </body>
-    </html>
-  `);
 }
