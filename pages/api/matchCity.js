@@ -3,9 +3,9 @@ import axios from 'axios';
 export default async function handler(req, res) {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://sightseeing-seven.vercel.app';
 
-  console.log('Received request method:', req.method);
-  console.log('Request query:', req.query);
-  console.log('Request body:', req.body);
+  console.log('matchCity.js - Received request method:', req.method);
+  console.log('matchCity.js - Request query:', JSON.stringify(req.query));
+  console.log('matchCity.js - Request body:', JSON.stringify(req.body));
 
   let city_text = '';
   if (req.method === 'GET') {
@@ -13,43 +13,40 @@ export default async function handler(req, res) {
   } else if (req.method === 'POST') {
     city_text = req.body.city_text || req.body.untrustedData?.inputText || '';
   } else {
+    console.log('matchCity.js - Unsupported method:', req.method);
     return res.status(405).json({ error: 'Method Not Allowed. GET or POST required.' });
   }
 
-  console.log('Received city_text:', city_text);
+  console.log('matchCity.js - Processed city_text:', city_text);
 
   if (!city_text || city_text.trim() === '') {
-    console.log('City input is missing.');
+    console.log('matchCity.js - City input is missing.');
     return sendErrorResponse(res, baseUrl, 'Please Enter a City');
   }
 
   try {
-    console.log('City text to search:', city_text);
+    console.log('matchCity.js - Fetching city data for:', city_text);
 
-    // Get the main city
     const geonameResponse = await axios.get(
       `https://api.opentripmap.com/0.1/en/places/geoname?name=${encodeURIComponent(city_text)}&apikey=${process.env.OPENTRIPMAP_API_KEY}`
     );
 
-    console.log('OpenTripMap Geoname API response:', JSON.stringify(geonameResponse.data, null, 2));
+    console.log('matchCity.js - OpenTripMap Geoname API response:', JSON.stringify(geonameResponse.data, null, 2));
 
     if (!geonameResponse.data || !geonameResponse.data.name) {
-      console.log('No city found in the Geoname API response');
+      console.log('matchCity.js - No city found in the Geoname API response');
       return sendErrorResponse(res, baseUrl, 'City Not Found');
     }
 
     const mainCity = geonameResponse.data.name;
     const country = geonameResponse.data.country;
 
-    // Create a list with just the main city
     let cities = [`${mainCity}, ${country}`];
-
-    // If the result is a partial match, add the original search term as well
     if (geonameResponse.data.partial_match) {
       cities.unshift(city_text);
     }
 
-    console.log('Final Cities List:', cities);
+    console.log('matchCity.js - Final Cities List:', cities);
 
     const cityList = cities.map((city, index) => `${index + 1}: ${city}`).join('\n');
     const cityButtons = cities.map((city, index) => `
@@ -58,7 +55,7 @@ export default async function handler(req, res) {
       <meta property="fc:frame:post_url_target:${index + 1}" content="post" />
     `).join('');
 
-    return res.setHeader('Content-Type', 'text/html').status(200).send(`
+    const htmlResponse = `
       <!DOCTYPE html>
       <html>
         <head>
@@ -70,19 +67,24 @@ export default async function handler(req, res) {
           <h1>Matching Cities for "${city_text}"</h1>
         </body>
       </html>
-    `);
+    `;
+
+    console.log('matchCity.js - Sending HTML response:', htmlResponse);
+
+    return res.setHeader('Content-Type', 'text/html').status(200).send(htmlResponse);
 
   } catch (error) {
-    console.error('Error fetching cities:', error);
+    console.error('matchCity.js - Error fetching cities:', error);
     if (error.response) {
-      console.error('Error response:', error.response.status, error.response.statusText);
-      console.error('Error data:', JSON.stringify(error.response.data, null, 2));
+      console.error('matchCity.js - Error response:', error.response.status, error.response.statusText);
+      console.error('matchCity.js - Error data:', JSON.stringify(error.response.data, null, 2));
     }
     return sendErrorResponse(res, baseUrl, 'Error Fetching Cities');
   }
 }
 
 function sendErrorResponse(res, baseUrl, errorMessage) {
+  console.log('matchCity.js - Sending error response:', errorMessage);
   return res.setHeader('Content-Type', 'text/html').status(200).send(`
     <!DOCTYPE html>
     <html>
