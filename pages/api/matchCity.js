@@ -29,7 +29,7 @@ export default async function handler(req, res) {
   try {
     console.log('City text to search:', city_text);
 
-    // First, get the main city
+    // Get the main city
     const geonameResponse = await axios.get(
       `https://api.opentripmap.com/0.1/en/places/geoname?name=${encodeURIComponent(city_text)}&apikey=${process.env.OPENTRIPMAP_API_KEY}`
     );
@@ -43,26 +43,16 @@ export default async function handler(req, res) {
 
     const mainCity = geonameResponse.data.name;
     const country = geonameResponse.data.country;
+    const lat = geonameResponse.data.lat;
+    const lon = geonameResponse.data.lon;
 
-    // Search for other cities with the same name worldwide
-    const searchResponse = await axios.get(
-      `https://api.opentripmap.com/0.1/en/places/autosuggest?name=${encodeURIComponent(mainCity)}&radius=20000000&limit=10&apikey=${process.env.OPENTRIPMAP_API_KEY}`
-    );
-
-    console.log('OpenTripMap Autosuggest API response:', JSON.stringify(searchResponse.data, null, 2));
-
+    // Create a list with just the main city
     let cities = [`${mainCity}, ${country}`];
-    
-    searchResponse.data.features.forEach(feature => {
-      const name = feature.properties.name;
-      const featureCountry = feature.properties.country;
-      if (name.toLowerCase() === mainCity.toLowerCase() && featureCountry !== country) {
-        cities.push(`${name}, ${featureCountry}`);
-      }
-    });
 
-    // Remove duplicates
-    cities = [...new Set(cities)];
+    // If the result is a partial match, add the original search term as well
+    if (geonameResponse.data.partial_match) {
+      cities.unshift(city_text);
+    }
 
     console.log('Final Cities List:', cities);
 
