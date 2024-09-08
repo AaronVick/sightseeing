@@ -7,6 +7,8 @@ export default async function handler(req, res) {
   const { city, page: pageStr } = req.method === 'GET' ? req.query : req.body;
   const page = parseInt(pageStr) || 1;
 
+  console.log('Received request:', req.method, { city, page });
+
   if (!city) {
     return sendErrorResponse(res, baseUrl, 'City name is required');
   }
