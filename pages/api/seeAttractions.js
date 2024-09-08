@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   console.log('seeAttractions.js - Request query:', JSON.stringify(req.query));
   console.log('seeAttractions.js - Request body:', JSON.stringify(req.body));
 
-  let cityIndex, attractionIndex, lat, lon;
+  let cityIndex, lat, lon, attractionIndex;
 
   if (req.method === 'POST') {
     const data = req.body;
@@ -21,6 +21,11 @@ export default async function handler(req, res) {
   }
 
   console.log('seeAttractions.js - Processed request:', { cityIndex, attractionIndex, lat, lon });
+
+  if (!lat || !lon) {
+    console.log('seeAttractions.js - Missing lat or lon:', { lat, lon });
+    return sendErrorResponse(res, baseUrl, 'Missing location coordinates');
+  }
 
   const cityList = JSON.parse(process.env.CITY_LIST || '[]');
   const city = cityList[cityIndex];
