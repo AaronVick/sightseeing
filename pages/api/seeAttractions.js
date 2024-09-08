@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 export default async function handler(req, res) {
-  const { city, page = 1 } = req.body;
+  const { city } = req.query;
+  const page = parseInt(req.query.page) || 1;
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://sightseeing-seven.vercel.app';
 
   if (!city) {
@@ -10,67 +11,58 @@ export default async function handler(req, res) {
 
   try {
     const geoResponse = await axios.get(
-      `https://api.opentripmap.com/0.1/en/places/geoname?name=${city}&apikey=${process.env.OPENTRIPMAP_API_KEY}`
+      `https://api.opentripmap.com/0.1/en/places/geoname?name=${encodeURIComponent(city)}&apikey=${process.env.OPENTRIPMAP_API_KEY}`
     );
     const { lat, lon } = geoResponse.data;
 
     const attractionsResponse = await axios.get(
-      `https://api.opentripmap.com/0.1/en/places/radius?radius=5000&lon=${lon}&lat=${lat}&limit=10&offset=${(page - 1) * 10}&apikey=${process.env.OPENTRIPMAP_API_KEY}`
+      `https://api.opentripmap.com/0.1/en/places/radius?radius=5000&lon=${lon}&lat=${lat}&limit=5&offset=${(page - 1) * 5}&apikey=${process.env.OPENTRIPMAP_API_KEY}`
     );
 
     const attractions = attractionsResponse.data.features.map((feature) => ({
-      id: feature.id,
       name: feature.properties.name || 'Unknown Name',
-      description: feature.properties.description || 'No description available',
-      image: feature.properties.image || `${baseUrl}/default-image.png`, // Placeholder image
+      kinds: feature.properties.kinds || 'No categories available',
     }));
 
-    res.status(200).json({
-      fc_frame: {
-        title: `Attractions in ${city}`,
-        description: `Explore these attractions in ${city}`,
-        image: `${baseUrl}/travel.png`,  // Image for the attractions page
-        items: attractions.map((attraction) => ({
-          title: attraction.name,
-          description: attraction.description,
-          image: attraction.image,
-        })),
-        buttons: [
-          {
-            text: 'Previous',
-            method: 'POST',
-            action: 'navigate',
-            url: `${baseUrl}/api/seeAttractions?city=${city}&page=${page - 1}`,
-            disabled: page === 1,  // Disable "Previous" on first page
-          },
-          {
-            text: 'Next',
-            method: 'POST',
-            action: 'navigate',
-            url: `${baseUrl}/api/seeAttractions?city=${city}&page=${page + 1}`,
-          },
-          {
-            text: 'Share',
-            action: 'embed',
-            target: `https://warpcast.com/~/compose?text=Explore+attractions+in+${city}!`,
-          },
-        ],
-      },
-    });
+    const attractionsList = attractions.map((attraction, index) => 
+      `${index + 1}. ${attraction.name} (${attraction.kinds.split(',')[0]})`
+    ).join('\n');
+
+    const hasNextPage = attractions.length === 5;
+
+    return res.setHeader('Content-Type', 'text/html').status(200).send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta property="fc:frame" content="vNext" />
+          <meta property="fc:frame:image" content="${baseUrl}/api/generateImage?text=${encodeURIComponent(`Attractions in ${city}\n\n${attractionsList}`)}" />
+          ${page > 1 ? `<meta property="fc:frame:button:1" content="Previous" />
+          <meta property="fc:frame:post_url:1" content="${baseUrl}/api/seeAttractions?city=${encodeURIComponent(city)}&page=${page - 1}" />` : ''}
+          ${hasNextPage ? `<meta property="fc:frame:button:2" content="Next" />
+          <meta property="fc:frame:post_url:2" content="${baseUrl}/api/seeAttractions?city=${encodeURIComponent(city)}&page=${page + 1}" />` : ''}
+          <meta property="fc:frame:button:3" content="New Search" />
+          <meta property="fc:frame:post_url:3" content="${baseUrl}/api/matchCity" />
+        </head>
+        <body>
+          <h1>Attractions in ${city}</h1>
+        </body>
+      </html>
+    `);
   } catch (error) {
     console.error('Error fetching attractions:', error);
-    res.status(500).json({
-      fc_frame: {
-        title: 'Error',
-        description: 'Failed to load attractions. Please try again.',
-        image: `${baseUrl}/error.png`,  // Error image
-        buttons: [
-          {
-            text: 'Try Again',
-            action: 'reload',
-          },
-        ],
-      },
-    });
+    return res.setHeader('Content-Type', 'text/html').status(200).send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta property="fc:frame" content="vNext" />
+          <meta property="fc:frame:image" content="${baseUrl}/api/generateImage?text=Error Fetching Attractions" />
+          <meta property="fc:frame:button:1" content="Try Again" />
+          <meta property="fc:frame:post_url" content="${baseUrl}/api/seeAttractions?city=${encodeURIComponent(city)}" />
+        </head>
+        <body>
+          <h1>Error: Failed to fetch attractions for ${city}. Please try again.</h1>
+        </body>
+      </html>
+    `);
   }
 }
