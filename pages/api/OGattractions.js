@@ -7,10 +7,10 @@ export const config = {
 export default async function handler(req) {
   const { searchParams } = new URL(req.url);
   
-  // Decode the parameters received from the URL
-  const name = decodeURIComponent(searchParams.get('name') || 'Unknown Attraction');
-  const description = decodeURIComponent(searchParams.get('description') || 'No description available');
-  const category = decodeURIComponent(searchParams.get('category') || 'No category');
+  // Decode parameters only if they appear to be URL-encoded
+  const name = searchParams.get('name') ? decodeURIComponent(searchParams.get('name')) : 'Unknown Attraction';
+  const description = searchParams.get('description') ? decodeURIComponent(searchParams.get('description')) : 'No description available';
+  const category = searchParams.get('category') ? decodeURIComponent(searchParams.get('category')) : 'No category';
 
   return new ImageResponse(
     (
