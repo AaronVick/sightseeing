@@ -43,39 +43,34 @@ export default async function handler(req, res) {
     const lat = geonameResponse.data.lat;
     const lon = geonameResponse.data.lon;
 
-    let cities = [{
-      name: `${mainCity}, ${country}`,
+    // Create a structured JSON object to store city details
+    const cityData = {
+      name: mainCity,
+      country: country,
       lat: lat,
       lon: lon
-    }];
+    };
 
-    console.log('matchCity.js - Final Cities List:', cities);
+    console.log('matchCity.js - Final city data to store in CITY_TEXT:', cityData);
 
-    // Store the cities list in an environment variable
-    process.env.CITY_LIST = JSON.stringify(cities);
+    // Store the city data JSON in the environment variable
+    process.env.CITY_TEXT = JSON.stringify(cityData);
 
-    const cityList = cities.map((city, index) => `${index + 1}: ${city.name}`).join('\n');
-    
     // Log the button data to check if lat/lon is being passed correctly
-    console.log('matchCity.js - Creating buttons with city data:', cities);
-
-    const cityButtons = cities.map((city, index) => `
-      <meta property="fc:frame:button:${index + 1}" content="${index + 1}" />
-      <meta property="fc:frame:post_data:${index + 1}" content='{"cityIndex": ${index}, "lat": ${city.lat}, "lon": ${city.lon}}' />
-    `).join('');
+    console.log('matchCity.js - Creating button for city:', cityData);
 
     const htmlResponse = `
       <!DOCTYPE html>
       <html>
         <head>
           <meta property="fc:frame" content="vNext" />
-          <meta property="fc:frame:image" content="${baseUrl}/api/generateImage?text=${encodeURIComponent(cityList)}" />
-          ${cityButtons}
+          <meta property="fc:frame:image" content="${baseUrl}/api/generateImage?text=${encodeURIComponent(mainCity)}" />
+          <meta property="fc:frame:button:1" content="View Attractions" />
           <meta property="fc:frame:post_url" content="${baseUrl}/api/seeAttractions" />
           <meta property="fc:frame:post_url_target" content="post" />
         </head>
         <body>
-          <h1>Matching Cities for "${city_text}"</h1>
+          <h1>Matching City for "${city_text}"</h1>
         </body>
       </html>
     `;
