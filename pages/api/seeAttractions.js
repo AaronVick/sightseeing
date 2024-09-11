@@ -2,38 +2,45 @@ import axios from 'axios';
 
 export default async function handler(req, res) {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://sightseeing-seven.vercel.app';
-  
+
   // Ensure the request is POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed. POST required.' });
   }
 
-  // Fetch city data and attractions data from the environment variable
-  let { cityData, attractions } = JSON.parse(process.env.CITY_TEXT || '{}');
-  const buttonIndex = parseInt(req.body.buttonIndex || '0');
-  
-  // If attractions don't exist yet, fetch them
+  // Fetch city and attractions data from CITY_TEXT environment variable
+  let cityDataAndAttractions = JSON.parse(process.env.CITY_TEXT || '{}');
+  const { cityData, attractions } = cityDataAndAttractions;
+
+  // If attractions are not already in CITY_TEXT, fetch them from OpenTripMap API
   if (!attractions || attractions.length === 0) {
+    console.log('Fetching attractions for city:', cityData.name);
+
     const response = await axios.get(
       `https://api.opentripmap.com/0.1/en/places/radius?radius=5000&lon=${cityData.lon}&lat=${cityData.lat}&limit=5&apikey=${process.env.OPENTRIPMAP_API_KEY}`
     );
 
-    attractions = response.data.features.map((feature) => ({
+    cityDataAndAttractions.attractions = response.data.features.map((feature) => ({
       name: feature.properties.name || 'Unknown Name',
       kind: feature.properties.kinds.split(',')[0] || 'No category',
       xid: feature.properties.xid
     }));
 
-    // Store attractions data in CITY_TEXT
-    process.env.CITY_TEXT = JSON.stringify({ cityData, attractions });
+    // Store city and attractions data back in CITY_TEXT
+    process.env.CITY_TEXT = JSON.stringify(cityDataAndAttractions);
   }
 
-  // Ensure the buttonIndex is valid
-  const attractionIndex = Math.max(0, Math.min(buttonIndex, attractions.length - 1));
+  // Extract the index from the button click (Previous/Next)
+  const buttonIndex = parseInt(req.body.buttonIndex || '0');
+  const attractionIndex = Math.max(0, Math.min(buttonIndex, cityDataAndAttractions.attractions.length - 1));
 
   // Fetch the selected attraction details
-  const attraction = attractions[attractionIndex];
+  const attraction = cityDataAndAttractions.attractions[attractionIndex];
   const attractionDetails = await getAttractionDetails(attraction.xid);
+
+  // Log attractions for debugging purposes
+  console.log('Attractions:', cityDataAndAttractions.attractions);
+  console.log('Current Attraction:', attraction);
 
   // Generate the Open Graph image using the OGattractions.js endpoint
   const imageUrl = `${baseUrl}/api/OGattractions?` + new URLSearchParams({
