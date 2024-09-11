@@ -12,6 +12,12 @@ export default async function handler(req, res) {
   let cityDataAndAttractions = JSON.parse(process.env.CITY_TEXT || '{}');
   const { cityData, attractions } = cityDataAndAttractions;
 
+  // Check if cityData is undefined or incomplete
+  if (!cityData || typeof cityData.name === 'undefined') {
+    console.error('Missing city data:', cityData);
+    return sendErrorResponse(res, baseUrl, 'City data is missing or incomplete');
+  }
+
   // If attractions are not already in CITY_TEXT, fetch them from OpenTripMap API
   if (!attractions || attractions.length === 0) {
     console.log('Fetching attractions for city:', cityData.name);
@@ -36,6 +42,13 @@ export default async function handler(req, res) {
 
   // Fetch the selected attraction details
   const attraction = cityDataAndAttractions.attractions[attractionIndex];
+  
+  // Add a check to prevent 'undefined' errors when accessing attraction data
+  if (!attraction || typeof attraction.name === 'undefined') {
+    console.error('Attraction data is missing or undefined:', attraction);
+    return sendErrorResponse(res, baseUrl, 'Attraction data is missing or incomplete');
+  }
+
   const attractionDetails = await getAttractionDetails(attraction.xid);
 
   // Log attractions for debugging purposes
