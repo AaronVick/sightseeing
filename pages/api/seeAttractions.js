@@ -11,6 +11,7 @@ export default async function handler(req, res) {
 
   // Fetch city data from the environment variable
   const cityData = JSON.parse(process.env.CITY_TEXT || '{}');
+  const buttonIndex = parseInt(req.body.buttonIndex || '0');
 
   // Check if lat/lon exists in city data
   if (!cityData || !cityData.lat || !cityData.lon) {
@@ -20,8 +21,6 @@ export default async function handler(req, res) {
 
   try {
     // Fetch attractions using the OpenTripMap API
-    console.log(`seeAttractions.js - Fetching attractions for lat: ${cityData.lat}, lon: ${cityData.lon}`);
-
     const response = await axios.get(
       `https://api.opentripmap.com/0.1/en/places/radius?radius=5000&lon=${cityData.lon}&lat=${cityData.lat}&limit=5&apikey=${process.env.OPENTRIPMAP_API_KEY}`
     );
@@ -36,8 +35,10 @@ export default async function handler(req, res) {
       return sendErrorResponse(res, baseUrl, 'No attractions found');
     }
 
-    // Pick the first attraction for now
-    const attraction = attractions[0];
+    // Ensure valid button index for cycling
+    const attractionIndex = Math.max(0, Math.min(buttonIndex, attractions.length - 1));
+
+    const attraction = attractions[attractionIndex];
     const attractionDetails = await getAttractionDetails(attraction.xid);
 
     // Generate the Open Graph image using the OGattractions.js endpoint
@@ -55,8 +56,11 @@ export default async function handler(req, res) {
           <meta charset="utf-8">
           <meta property="fc:frame" content="vNext" />
           <meta property="fc:frame:image" content="${imageUrl}" />
-          <meta property="fc:frame:button:1" content="New Search" />
-          <meta property="fc:frame:post_url" content="${baseUrl}/api/matchCity" />
+          <meta property="fc:frame:button:1" content="Previous" />
+          <meta property="fc:frame:button:2" content="Next" />
+          <meta property="fc:frame:post_data:1" content='{"buttonIndex": ${attractionIndex - 1}}' />
+          <meta property="fc:frame:post_data:2" content='{"buttonIndex": ${attractionIndex + 1}}' />
+          <meta property="fc:frame:post_url" content="${baseUrl}/api/seeAttractions" />
         </head>
         <body>
           <h1>${attraction.name}</h1>
@@ -64,8 +68,6 @@ export default async function handler(req, res) {
         </body>
       </html>
     `;
-
-    console.log('seeAttractions.js - Sending HTML response:', htmlResponse);
 
     return res
       .setHeader('Content-Type', 'text/html; charset=utf-8')
