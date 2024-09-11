@@ -96,3 +96,42 @@ export default async function handler(req, res) {
     return sendErrorResponse(res, baseUrl, 'Failed to fetch attractions.');
   }
 }
+
+async function getAttractionDetails(xid) {
+  try {
+    const response = await axios.get(
+      `https://api.opentripmap.com/0.1/en/places/xid/${xid}?apikey=${process.env.OPENTRIPMAP_API_KEY}`
+    );
+    return {
+      description: response.data.wikipedia_extracts?.text || response.data.info?.descr || null,
+      image: response.data.preview?.source || null
+    };
+  } catch (error) {
+    console.error('Error fetching attraction details:', error);
+    return { description: null, image: null };
+  }
+}
+
+// Define the missing sendErrorResponse function
+function sendErrorResponse(res, baseUrl, errorMessage) {
+  console.log('seeAttractions.js - Sending error response:', errorMessage);
+  const htmlErrorResponse = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta property="fc:frame" content="vNext" />
+        <meta property="fc:frame:image" content="${baseUrl}/api/generateErrorImage?text=${encodeURIComponent(errorMessage)}" />
+        <meta property="fc:frame:button:1" content="Try Again" />
+        <meta property="fc:frame:post_url" content="${baseUrl}/api/matchCity" />
+      </head>
+      <body>
+        <h1>${errorMessage}</h1>
+      </body>
+    </html>
+  `;
+  return res
+    .setHeader('Content-Type', 'text/html; charset=utf-8')
+    .status(200)
+    .send(htmlErrorResponse);
+}
