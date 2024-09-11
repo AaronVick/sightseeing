@@ -7,59 +7,61 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method Not Allowed. POST required.' });
   }
 
-  // Fetch city data from CITY_TEXT environment variable
-  let cityData = JSON.parse(process.env.CITY_TEXT || '{}');
-  let attractionsData = JSON.parse(process.env.ATTRACTIONS_MATCH || '{}');
-  const { cityData: storedCityData } = cityData;
-  let { attractions } = attractionsData;
+  // Fetch city data from the environment variable and parse it
+  let cityDataAndAttractions = {};
+  
+  try {
+    cityDataAndAttractions = JSON.parse(process.env.CITY_TEXT || '{}');
+  } catch (error) {
+    console.error('Error parsing CITY_TEXT:', error);
+    return sendErrorResponse(res, baseUrl, 'City data is corrupted or cannot be parsed.');
+  }
 
-  // Check if cityData is present and valid
-  if (!storedCityData || typeof storedCityData.lat === 'undefined' || typeof storedCityData.lon === 'undefined') {
-    console.error('Missing city data:', storedCityData);
+  const { cityData, attractions } = cityDataAndAttractions;
+
+  // Check if cityData is valid
+  if (!cityData || !cityData.lat || !cityData.lon) {
+    console.error('City data is missing or incomplete:', cityData);
     return sendErrorResponse(res, baseUrl, 'City data is missing or incomplete');
   }
 
-  // If attractions are not already in ATTRACTIONS_MATCH, fetch them
+  // Fetch attractions if they are not already available
   if (!attractions || attractions.length === 0) {
-    console.log('Fetching attractions for city:', storedCityData.name);
+    console.log('Fetching attractions for city:', cityData.name);
 
     const response = await axios.get(
-      `https://api.opentripmap.com/0.1/en/places/radius?radius=5000&lon=${storedCityData.lon}&lat=${storedCityData.lat}&limit=5&apikey=${process.env.OPENTRIPMAP_API_KEY}`
+      `https://api.opentripmap.com/0.1/en/places/radius?radius=5000&lon=${cityData.lon}&lat=${cityData.lat}&limit=5&apikey=${process.env.OPENTRIPMAP_API_KEY}`
     );
 
-    attractions = response.data.features.map((feature) => ({
+    cityDataAndAttractions.attractions = response.data.features.map((feature) => ({
       name: feature.properties.name || 'Unknown Name',
       kind: feature.properties.kinds.split(',')[0] || 'No category',
       xid: feature.properties.xid
     }));
 
-    // Store fetched attractions in ATTRACTIONS_MATCH
-    process.env.ATTRACTIONS_MATCH = JSON.stringify({ attractions });
+    // Store the updated city and attractions data in CITY_TEXT
+    process.env.CITY_TEXT = JSON.stringify(cityDataAndAttractions);
   }
 
-  // Extract the index from the button click (Previous/Next)
+  // Continue with the rest of the logic...
   const buttonIndex = parseInt(req.body.buttonIndex || '0');
-  const attractionIndex = Math.max(0, Math.min(buttonIndex, attractions.length - 1));
+  const attractionIndex = Math.max(0, Math.min(buttonIndex, cityDataAndAttractions.attractions.length - 1));
 
-  // Fetch the selected attraction details
-  const attraction = attractions[attractionIndex];
+  const attraction = cityDataAndAttractions.attractions[attractionIndex];
   
-  // Check if attraction data is valid
-  if (!attraction || typeof attraction.name === 'undefined') {
+  if (!attraction || !attraction.name) {
     console.error('Attraction data is missing or undefined:', attraction);
     return sendErrorResponse(res, baseUrl, 'Attraction data is missing or incomplete');
   }
 
   const attractionDetails = await getAttractionDetails(attraction.xid);
 
-  // Generate the Open Graph image using the OGattractions.js endpoint
   const imageUrl = `${baseUrl}/api/OGattractions?` + new URLSearchParams({
     name: encodeURIComponent(attraction.name),
     description: encodeURIComponent(attractionDetails.description || 'No description available'),
     category: encodeURIComponent(attraction.kind),
   }).toString();
 
-  // Generate meta tags for the Farcaster frame
   const htmlResponse = `
     <!DOCTYPE html>
     <html>
@@ -86,7 +88,7 @@ export default async function handler(req, res) {
     .send(htmlResponse);
 }
 
-// Fetch attraction details from the OpenTripMap API
+// Function to fetch attraction details
 async function getAttractionDetails(xid) {
   try {
     const response = await axios.get(
@@ -102,7 +104,6 @@ async function getAttractionDetails(xid) {
   }
 }
 
-// Error response function to handle errors and generate meta tags
 function sendErrorResponse(res, baseUrl, errorMessage) {
   const htmlErrorResponse = `
     <!DOCTYPE html>
